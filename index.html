@@ -1037,6 +1037,68 @@
     background:var(--blue); border-color:var(--blue); color:#fff;
   }
 
+  /* ---------- ADVANCED / DERIVED COLUMN FILTER ---------- */
+  .col-menu.has-advanced{ width:250px; }
+  .adv-filter-quick{
+    display:flex;
+    flex-wrap:wrap;
+    gap:5px;
+    margin-bottom:7px;
+  }
+  .adv-filter-quick button{
+    border:1px solid var(--gray-300);
+    background:#fff;
+    border-radius:20px;
+    padding:4px 9px;
+    font-size:10.5px;
+    font-weight:700;
+    color:var(--gray-700);
+    cursor:pointer;
+  }
+  .adv-filter-quick button:hover{ background:var(--blue-light); border-color:#c7d9fb; color:var(--blue); }
+  .adv-filter-quick button.active{ background:var(--blue); border-color:var(--blue); color:#fff; }
+  .adv-filter-op-select{
+    width:100%;
+    border:1px solid var(--gray-300);
+    border-radius:6px;
+    padding:5px 7px;
+    font-size:11.5px;
+    font-family:inherit;
+    color:var(--gray-900);
+    background:#fff;
+    margin-bottom:6px;
+  }
+  .adv-filter-op-select:focus{ outline:none; border-color:var(--blue); }
+  .adv-filter-values{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    margin-bottom:6px;
+  }
+  .adv-filter-values input{
+    flex:1;
+    min-width:0;
+    border:1px solid var(--gray-300);
+    border-radius:6px;
+    padding:5px 7px;
+    font-size:11.5px;
+    font-family:inherit;
+  }
+  .adv-filter-values input:focus{ outline:none; border-color:var(--blue); }
+  .adv-filter-values .and-label{
+    font-size:10px;
+    font-weight:700;
+    color:var(--gray-500);
+    flex-shrink:0;
+  }
+  .adv-filter-active-note{
+    font-size:10.5px;
+    color:var(--blue);
+    font-weight:700;
+    margin-bottom:6px;
+    line-height:1.4;
+  }
+
   /* ---------- RESPONSIVE ---------- */
   @media (max-width:1150px){
     .insight-panel{ grid-column:span 12; }
@@ -1294,13 +1356,29 @@
     <input type="text" class="col-menu-search-input" id="colMenuSearchInput" placeholder="Type to find one value…">
   </div>
   <div class="col-menu-divider"></div>
-  <div class="col-menu-section" style="padding-bottom:0;">
-    <label class="col-menu-label">Filter (pick any number)</label>
+  <div class="col-menu-section" style="padding-bottom:6px;">
+    <label class="col-menu-label">Filter — pick values</label>
     <input type="text" class="filter-dropdown-search" id="filterDropdownSearch" placeholder="Find in list…">
     <div class="filter-dropdown-list" id="filterDropdownList"></div>
     <div class="filter-dropdown-actions">
       <button type="button" id="filterSelectAllBtn">Select all</button>
       <button type="button" id="filterClearBtn">Clear</button>
+    </div>
+  </div>
+  <div class="col-menu-divider"></div>
+  <div class="col-menu-section" style="padding-bottom:0;">
+    <label class="col-menu-label">Advanced — condition or calculation</label>
+    <div class="adv-filter-active-note" id="advFilterActiveNote" style="display:none;"></div>
+    <div class="adv-filter-quick" id="advFilterQuickRow"></div>
+    <select class="adv-filter-op-select" id="advFilterOpSelect"></select>
+    <div class="adv-filter-values">
+      <input type="text" id="advFilterValue" placeholder="Value">
+      <span class="and-label" id="advFilterAndLabel" style="display:none;">and</span>
+      <input type="text" id="advFilterValue2" placeholder="Value" style="display:none;">
+    </div>
+    <div class="filter-dropdown-actions">
+      <button type="button" id="advFilterApplyBtn">Apply</button>
+      <button type="button" id="advFilterClearBtn">Clear</button>
     </div>
   </div>
   <div class="col-menu-actions">
@@ -2159,14 +2237,14 @@
 
   var EVENTS_COLUMNS = [
     { key:"name", label:"Event", get:function(r){ return r.name; } },
-    { key:"tickets", label:"Tickets", get:function(r){ return r.tickets; }, fmt:fmtInt },
-    { key:"free", label:"Free", get:function(r){ return r.free; }, fmt:fmtInt },
-    { key:"paid", label:"Paid", get:function(r){ return r.paid; }, fmt:fmtInt },
-    { key:"orders", label:"Orders", get:function(r){ return r.orders; }, fmt:fmtInt },
-    { key:"faceValue", label:"Face Value", get:function(r){ return r.faceValue; }, fmt:fmtCurrencyFull },
-    { key:"revenue", label:"Revenue", get:function(r){ return r.revenue; }, fmt:fmtCurrencyFull },
-    { key:"pctRev", label:"% Rev", get:function(r){ return r.pctRev; }, fmt:function(v){ return v.toFixed(1)+"%"; } },
-    { key:"healthScore", label:"Health", get:function(r){ return r.health.score; },
+    { key:"tickets", label:"Tickets", get:function(r){ return r.tickets; }, fmt:fmtInt, numeric:true },
+    { key:"free", label:"Free", get:function(r){ return r.free; }, fmt:fmtInt, numeric:true },
+    { key:"paid", label:"Paid", get:function(r){ return r.paid; }, fmt:fmtInt, numeric:true },
+    { key:"orders", label:"Orders", get:function(r){ return r.orders; }, fmt:fmtInt, numeric:true },
+    { key:"faceValue", label:"Face Value", get:function(r){ return r.faceValue; }, fmt:fmtCurrencyFull, numeric:true },
+    { key:"revenue", label:"Revenue", get:function(r){ return r.revenue; }, fmt:fmtCurrencyFull, numeric:true },
+    { key:"pctRev", label:"% Rev", get:function(r){ return r.pctRev; }, fmt:function(v){ return v.toFixed(1)+"%"; }, numeric:true },
+    { key:"healthScore", label:"Health", get:function(r){ return r.health.score; }, numeric:true,
       fmt:function(v,r){ return r.health.icon+" "+r.health.label; },
       tt:"A blended 🟢/🟡/🔴 read on this event vs this month's portfolio average across Average Order Value, POS adoption, paid-ticket ratio, and revenue per ticket. Hover a row's icon for the full breakdown of why. Filter by rating using ▾. Not a judgment on the event itself — free or promotional events will naturally score lower here." }
   ];
@@ -2184,6 +2262,7 @@
 
     var ui = tableUI.events;
     var filtered = applyTableFilter(enriched, ui.filter, EVENTS_COLUMNS);
+    filtered = applyAdvancedFilters(filtered, ui.advancedFilter, EVENTS_COLUMNS, enriched);
     filtered = applyTableSearch(filtered, ui.search, EVENTS_COLUMNS);
     var sorted = ui.sort.length
       ? applyTableSort(filtered, ui.sort, EVENTS_COLUMNS)
@@ -2781,26 +2860,26 @@
   // are kept. Different from search: filter can keep multiple results at once
   // from a fixed list, search narrows freely to whatever text you type.
   var tableUI = {
-    monthly: { sort: [], search: {}, filter: {} },
-    events: { sort: [], search: {}, filter: {} }
+    monthly: { sort: [], search: {}, filter: {}, advancedFilter: {} },
+    events: { sort: [], search: {}, filter: {}, advancedFilter: {} }
   };
   var openColMenu = null; // { table, col, allValues }
 
   var MONTHLY_COLUMNS = [
     { key:"label", label:"Month", get:function(r){ return r.label; } },
-    { key:"tickets", label:"Tickets", get:function(r){ return r.tickets; }, fmt:fmtInt },
-    { key:"gtv", label:"Revenue", get:function(r){ return r.gtv; }, fmt:fmtCurrencyFull },
+    { key:"tickets", label:"Tickets", get:function(r){ return r.tickets; }, fmt:fmtInt, numeric:true },
+    { key:"gtv", label:"Revenue", get:function(r){ return r.gtv; }, fmt:fmtCurrencyFull, numeric:true },
     { key:"ticketsDelta", label:"Ticket Δ", get:function(r){ return r.ticketsDelta; },
-      fmt:function(v){ return (v===null||v===undefined) ? "—" : fmtSignedInt(v); } },
+      fmt:function(v){ return (v===null||v===undefined) ? "—" : fmtSignedInt(v); }, numeric:true },
     { key:"gtvDelta", label:"Revenue Δ", get:function(r){ return r.gtvDelta; },
-      fmt:function(v){ return (v===null||v===undefined) ? "—" : ("UGX "+fmtSignedInt(v)); } },
+      fmt:function(v){ return (v===null||v===undefined) ? "—" : ("UGX "+fmtSignedInt(v)); }, numeric:true },
     { key:"ticketsVsTarget", label:"Ticket Target %", get:function(r){ return r.ticketsVsTarget; },
-      fmt:function(v){ return (v===null||v===undefined) ? "—" : fmtPct(v); } },
+      fmt:function(v){ return (v===null||v===undefined) ? "—" : fmtPct(v); }, numeric:true },
     { key:"gtvVsTarget", label:"Revenue Target %", get:function(r){ return r.gtvVsTarget; },
-      fmt:function(v){ return (v===null||v===undefined) ? "—" : fmtPct(v); } },
+      fmt:function(v){ return (v===null||v===undefined) ? "—" : fmtPct(v); }, numeric:true },
     { key:"trend", label:"Trend",
       get:function(r){ return r.trend.cls==="up" ? 2 : (r.trend.cls==="down" ? 0 : 1); },
-      fmt:function(v){ return v===2 ? "▲ Up" : (v===0 ? "▼ Down" : "► Flat"); },
+      fmt:function(v){ return v===2 ? "▲ Up" : (v===0 ? "▼ Down" : "► Flat"); }, numeric:true,
       tt:"▲ up, ▼ down, ► flat — based on that month's revenue change vs the month before. Anything within ±2% counts as flat." }
   ];
 
@@ -2863,6 +2942,115 @@
       });
     });
   }
+  // ---------- Advanced / derived / calculation-based column filters ----------
+  // Beyond picking exact values, each column can also be filtered by a rule:
+  // numeric columns get comparisons (>, <, between, etc.) plus derived rules
+  // computed live from the data (above/below this table's average, top/bottom
+  // N rows by that column); text columns get contains/starts/ends/equals.
+  var NUMERIC_FILTER_OPS = [
+    { op:"gt", label:"Greater than", inputs:1 },
+    { op:"gte", label:"Greater than or equal to", inputs:1 },
+    { op:"lt", label:"Less than", inputs:1 },
+    { op:"lte", label:"Less than or equal to", inputs:1 },
+    { op:"between", label:"Between", inputs:2 },
+    { op:"eq", label:"Equal to", inputs:1 },
+    { op:"neq", label:"Not equal to", inputs:1 },
+    { op:"above_avg", label:"Above average (this column)", inputs:0 },
+    { op:"below_avg", label:"Below average (this column)", inputs:0 },
+    { op:"top_n", label:"Top N rows", inputs:1 },
+    { op:"bottom_n", label:"Bottom N rows", inputs:1 }
+  ];
+  var TEXT_FILTER_OPS = [
+    { op:"contains", label:"Contains", inputs:1 },
+    { op:"not_contains", label:"Does not contain", inputs:1 },
+    { op:"starts", label:"Starts with", inputs:1 },
+    { op:"ends", label:"Ends with", inputs:1 },
+    { op:"eq", label:"Equals", inputs:1 },
+    { op:"neq", label:"Not equals", inputs:1 }
+  ];
+  function filterOpsForColumn(col){
+    return col.numeric ? NUMERIC_FILTER_OPS : TEXT_FILTER_OPS;
+  }
+  function opLabel(col, op){
+    var list = filterOpsForColumn(col);
+    for(var i=0;i<list.length;i++){ if(list[i].op === op) return list[i].label; }
+    return op;
+  }
+  function columnNumericValues(rows, col){
+    return rows.map(function(r){ return col.get(r); })
+      .filter(function(v){ return typeof v === "number" && !isNaN(v); });
+  }
+  function columnAverage(rows, col){
+    var vals = columnNumericValues(rows, col);
+    if(!vals.length) return null;
+    return vals.reduce(function(s,v){ return s+v; }, 0) / vals.length;
+  }
+  function nthColumnValue(rows, col, n, fromTop){
+    var vals = columnNumericValues(rows, col).sort(function(a,b){ return fromTop ? b-a : a-b; });
+    var idx = Math.min(Math.max(1, n||1), vals.length) - 1;
+    return vals.length ? vals[idx] : null;
+  }
+  function rowSatisfiesAdvancedFilter(row, col, spec, statsRows){
+    var raw = col.get(row);
+    var isNum = typeof raw === "number" && !isNaN(raw);
+    switch(spec.op){
+      case "gt": return isNum && raw > spec.value;
+      case "gte": return isNum && raw >= spec.value;
+      case "lt": return isNum && raw < spec.value;
+      case "lte": return isNum && raw <= spec.value;
+      case "between":
+        var lo = Math.min(spec.value, spec.value2), hi = Math.max(spec.value, spec.value2);
+        return isNum && raw >= lo && raw <= hi;
+      case "eq":
+        return col.numeric ? (isNum && raw === spec.value)
+          : displayText(col,row).toLowerCase() === String(spec.value||"").toLowerCase();
+      case "neq":
+        return col.numeric ? (isNum && raw !== spec.value)
+          : displayText(col,row).toLowerCase() !== String(spec.value||"").toLowerCase();
+      case "contains": return displayText(col,row).toLowerCase().indexOf(String(spec.value||"").toLowerCase()) !== -1;
+      case "not_contains": return displayText(col,row).toLowerCase().indexOf(String(spec.value||"").toLowerCase()) === -1;
+      case "starts": return displayText(col,row).toLowerCase().indexOf(String(spec.value||"").toLowerCase()) === 0;
+      case "ends":
+        var t = displayText(col,row).toLowerCase(), s = String(spec.value||"").toLowerCase();
+        return s.length === 0 || t.slice(-s.length) === s;
+      case "above_avg":
+        var avgA = columnAverage(statsRows, col);
+        return avgA !== null && isNum && raw > avgA;
+      case "below_avg":
+        var avgB = columnAverage(statsRows, col);
+        return avgB !== null && isNum && raw < avgB;
+      case "top_n":
+        var threshTop = nthColumnValue(statsRows, col, spec.value, true);
+        return threshTop !== null && isNum && raw >= threshTop;
+      case "bottom_n":
+        var threshBot = nthColumnValue(statsRows, col, spec.value, false);
+        return threshBot !== null && isNum && raw <= threshBot;
+      default: return true;
+    }
+  }
+  function applyAdvancedFilters(rows, advancedSpec, columns, statsRows){
+    var cm = colMap(columns);
+    var keys = Object.keys(advancedSpec).filter(function(k){ return advancedSpec[k] && advancedSpec[k].op; });
+    if(!keys.length) return rows;
+    return rows.filter(function(row){
+      return keys.every(function(k){
+        var col = cm[k];
+        if(!col) return true;
+        return rowSatisfiesAdvancedFilter(row, col, advancedSpec[k], statsRows);
+      });
+    });
+  }
+  function describeAdvancedFilter(col, spec){
+    if(!spec || !spec.op) return "";
+    var label = opLabel(col, spec.op);
+    var fmtVal = function(v){ return (col.numeric && col.fmt) ? col.fmt(v) : v; };
+    if(spec.op === "between") return label + " " + fmtVal(spec.value) + " and " + fmtVal(spec.value2);
+    if(spec.op === "above_avg" || spec.op === "below_avg") return label;
+    if(spec.op === "top_n") return "Top " + spec.value + " rows";
+    if(spec.op === "bottom_n") return "Bottom " + spec.value + " rows";
+    return label + " “" + fmtVal(spec.value) + "”";
+  }
+
   function distinctColumnValues(rows, col){
     var seen = {}, out = [];
     rows.forEach(function(row){
@@ -2883,7 +3071,8 @@
       var badge = sIdx > 0 ? ('<sup class="th-sort-badge">'+(sIdx+1)+'</sup>') : "";
       var hasSearch = !!ui.search[col.key];
       var hasFilter = (ui.filter[col.key] || []).length > 0;
-      var hasState = !!dir || hasSearch || hasFilter;
+      var hasAdvanced = !!(ui.advancedFilter[col.key] && ui.advancedFilter[col.key].op);
+      var hasState = !!dir || hasSearch || hasFilter || hasAdvanced;
       var ttAttr = col.tt ? (' data-tt="'+escapeHtml(col.tt)+'"') : "";
       var thClass = "th-sortable" + (dir ? (" sorted-"+dir) : "");
       return '<th class="'+thClass+'"'+ttAttr+'>' +
@@ -2913,6 +3102,7 @@
 
     var reversed = rows.slice().reverse();
     var filtered = applyTableFilter(reversed, ui.filter, MONTHLY_COLUMNS);
+    filtered = applyAdvancedFilters(filtered, ui.advancedFilter, MONTHLY_COLUMNS, reversed);
     filtered = applyTableSearch(filtered, ui.search, MONTHLY_COLUMNS);
     filtered = applyTableSort(filtered, ui.sort, MONTHLY_COLUMNS);
 
@@ -3330,18 +3520,117 @@
     document.getElementById("filterDropdownSearch").value = "";
     updateColMenuSortButtons();
     renderFilterOptionList();
+    menu.classList.toggle("has-advanced", true);
+    populateAdvFilterUI();
 
     var rect = anchorEl.getBoundingClientRect();
     var vw = window.innerWidth || 1200, vh = window.innerHeight || 800;
-    var left = Math.max(6, Math.min(rect.left - 170, vw - 226));
+    var left = Math.max(6, Math.min(rect.left - 190, vw - 266));
     var top = rect.bottom + 6;
-    if(top + 380 > vh) top = Math.max(6, rect.top - 386);
+    if(top + 520 > vh) top = Math.max(6, rect.top - 526);
     menu.style.left = left + "px";
     menu.style.top = top + "px";
 
     var prevOpen = document.querySelectorAll(".th-menu-btn.menu-open");
     for(var i=0;i<prevOpen.length;i++) prevOpen[i].classList.remove("menu-open");
     anchorEl.classList.add("menu-open");
+  }
+
+  // Builds the operator dropdown + quick derived-filter buttons for whichever
+  // column's menu is currently open, and restores/reflects its current state.
+  function populateAdvFilterUI(){
+    if(!openColMenu) return;
+    var columns = getColumnsForTable(openColMenu.table);
+    var col = colMap(columns)[openColMenu.col];
+    if(!col) return;
+    var ui = tableUI[openColMenu.table];
+    var current = ui.advancedFilter[openColMenu.col] || null;
+    var ops = filterOpsForColumn(col);
+
+    var sel = document.getElementById("advFilterOpSelect");
+    sel.innerHTML = ops.map(function(o){ return '<option value="'+o.op+'">'+o.label+'</option>'; }).join("");
+    sel.value = current ? current.op : ops[0].op;
+
+    document.getElementById("advFilterValue").value = (current && current.value !== undefined && current.value !== null) ? current.value : "";
+    document.getElementById("advFilterValue2").value = (current && current.value2 !== undefined && current.value2 !== null) ? current.value2 : "";
+    updateAdvFilterInputsVisibility();
+
+    var note = document.getElementById("advFilterActiveNote");
+    if(current && current.op){
+      note.style.display = "block";
+      note.textContent = "Active: " + describeAdvancedFilter(col, current);
+    } else {
+      note.style.display = "none";
+      note.textContent = "";
+    }
+
+    var quickRow = document.getElementById("advFilterQuickRow");
+    if(col.numeric){
+      var quickDefs = [
+        { label:"Above avg", op:"above_avg" },
+        { label:"Below avg", op:"below_avg" },
+        { label:"Top 5", op:"top_n", value:5 },
+        { label:"Bottom 5", op:"bottom_n", value:5 }
+      ];
+      quickRow.innerHTML = quickDefs.map(function(q){
+        var isActive = !!(current && current.op === q.op && (q.value===undefined || Number(current.value) === q.value));
+        return '<button type="button" class="quick-adv-filter-btn'+(isActive?" active":"")+'" data-adv-op="'+q.op+'" data-adv-value="'+(q.value!==undefined?q.value:"")+'">'+q.label+'</button>';
+      }).join("");
+    } else {
+      quickRow.innerHTML = "";
+    }
+  }
+
+  function updateAdvFilterInputsVisibility(){
+    if(!openColMenu) return;
+    var col = colMap(getColumnsForTable(openColMenu.table))[openColMenu.col];
+    var ops = filterOpsForColumn(col);
+    var opVal = document.getElementById("advFilterOpSelect").value;
+    var opDef = null;
+    for(var i=0;i<ops.length;i++){ if(ops[i].op===opVal){ opDef = ops[i]; break; } }
+    var n = opDef ? opDef.inputs : 1;
+    document.getElementById("advFilterValue").style.display = n >= 1 ? "" : "none";
+    document.getElementById("advFilterAndLabel").style.display = n >= 2 ? "" : "none";
+    document.getElementById("advFilterValue2").style.display = n >= 2 ? "" : "none";
+  }
+
+  function applyAdvFilterFromUI(){
+    if(!openColMenu) return;
+    var col = colMap(getColumnsForTable(openColMenu.table))[openColMenu.col];
+    var op = document.getElementById("advFilterOpSelect").value;
+    var ops = filterOpsForColumn(col);
+    var opDef = null;
+    for(var i=0;i<ops.length;i++){ if(ops[i].op===op){ opDef = ops[i]; break; } }
+    var spec = { op: op };
+    if(opDef && opDef.inputs >= 1){
+      var v1 = document.getElementById("advFilterValue").value;
+      spec.value = col.numeric ? parseFloat(v1) : v1;
+      if(col.numeric && isNaN(spec.value)) return; // don't apply an incomplete/invalid numeric filter
+    }
+    if(opDef && opDef.inputs >= 2){
+      var v2 = document.getElementById("advFilterValue2").value;
+      spec.value2 = col.numeric ? parseFloat(v2) : v2;
+      if(col.numeric && isNaN(spec.value2)) return;
+    }
+    tableUI[openColMenu.table].advancedFilter[openColMenu.col] = spec;
+    rerenderTableByKey(openColMenu.table);
+    populateAdvFilterUI();
+  }
+
+  function setQuickAdvFilter(op, value){
+    if(!openColMenu) return;
+    var spec = { op: op };
+    if(value !== "" && value !== undefined && value !== null) spec.value = Number(value);
+    tableUI[openColMenu.table].advancedFilter[openColMenu.col] = spec;
+    rerenderTableByKey(openColMenu.table);
+    populateAdvFilterUI();
+  }
+
+  function clearAdvFilterFromUI(){
+    if(!openColMenu) return;
+    delete tableUI[openColMenu.table].advancedFilter[openColMenu.col];
+    rerenderTableByKey(openColMenu.table);
+    populateAdvFilterUI();
   }
 
   function initTableControls(){
@@ -3357,11 +3646,18 @@
         }
         return;
       }
+      var quickAdvBtn = findAncestorWithAttr(e.target, "data-adv-op");
+      if(quickAdvBtn && openColMenu){
+        setQuickAdvFilter(quickAdvBtn.getAttribute("data-adv-op"), quickAdvBtn.getAttribute("data-adv-value"));
+        return;
+      }
       if(openColMenu){
         var advanced = document.getElementById("colMenuAdvancedToggle").checked;
         if(e.target.id === "colMenuSortAscBtn"){ setColumnSort(openColMenu.table, openColMenu.col, "asc", advanced); updateColMenuSortButtons(); return; }
         if(e.target.id === "colMenuSortDescBtn"){ setColumnSort(openColMenu.table, openColMenu.col, "desc", advanced); updateColMenuSortButtons(); return; }
         if(e.target.id === "colMenuClearSortBtn"){ setColumnSort(openColMenu.table, openColMenu.col, "clear", false); updateColMenuSortButtons(); return; }
+        if(e.target.id === "advFilterApplyBtn"){ applyAdvFilterFromUI(); return; }
+        if(e.target.id === "advFilterClearBtn"){ clearAdvFilterFromUI(); return; }
       }
       var menu = document.getElementById("colMenu");
       if(openColMenu && !menu.contains(e.target)){
@@ -3397,6 +3693,10 @@
         else { if(pos !== -1) arr.splice(pos, 1); }
         ui.filter[openColMenu.col] = arr;
         rerenderTableByKey(openColMenu.table);
+        return;
+      }
+      if(e.target && e.target.id === "advFilterOpSelect"){
+        updateAdvFilterInputsVisibility();
       }
     });
 
