@@ -27,7 +27,7 @@
   html,body{ height:100%; }
   body{
     margin:0;
-    background:#f6f8fb;
+    background:#FAF9F6;
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     color:var(--gray-900);
     overflow-x:hidden;
@@ -852,6 +852,24 @@
     background:none !important;
   }
 
+  /* ---------- HOVER TOOLTIP (shared across all charts) ---------- */
+  .chart-tooltip{
+    position:fixed;
+    pointer-events:none;
+    background:var(--gray-900);
+    color:#fff;
+    font-size:11px;
+    line-height:1.5;
+    font-weight:600;
+    padding:7px 10px;
+    border-radius:8px;
+    box-shadow:0 8px 20px rgba(15,23,42,0.3);
+    z-index:1000;
+    display:none;
+    max-width:230px;
+    white-space:pre-line;
+  }
+
   /* ---------- RESPONSIVE ---------- */
   @media (max-width:1150px){
     .insight-panel{ grid-column:span 12; }
@@ -1098,6 +1116,9 @@
     </div>
   </div>
 </div>
+
+<!-- Shared hover tooltip for all chart data points ([data-tt] elements) -->
+<div class="chart-tooltip" id="chartTooltip"></div>
 
 <script>
 (function(){
@@ -1503,7 +1524,7 @@
   }
 
   // ---------- Sparkline builder ----------
-  function buildSparklineSVG(values, color){
+  function buildSparklineSVG(values, color, labels, fmtFn){
     var w = 60, h = 24, pad = 2;
     var n = values.length;
     if(n < 2){
@@ -1521,8 +1542,17 @@
     }).join(" ");
     var lastX = pad + (n-1)*stepX;
     var lastY = pad + (h - pad*2) - ((values[n-1]-min)/range)*(h - pad*2);
+    var hitPoints = "";
+    if(labels && fmtFn){
+      hitPoints = values.map(function(v,i){
+        var x = pad + i*stepX;
+        var y = pad + (h - pad*2) - ((v-min)/range)*(h - pad*2);
+        var tt = escapeHtml(labels[i]) + ": " + fmtFn(v);
+        return '<circle class="tt-point" data-tt="'+tt+'" cx="'+x+'" cy="'+y+'" r="5" fill="transparent" style="pointer-events:all;cursor:pointer;"></circle>';
+      }).join("");
+    }
     return '<polyline points="'+points+'" fill="none" stroke="'+color+'" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></polyline>' +
-      '<circle cx="'+lastX+'" cy="'+lastY+'" r="2" fill="'+color+'"></circle>';
+      '<circle cx="'+lastX+'" cy="'+lastY+'" r="2" fill="'+color+'"></circle>' + hitPoints;
   }
 
   var PALETTE = ["#1d4ed8","#15803d","#b45309","#7c3aed","#0891b2","#be185d","#65a30d","#ea580c","#0f766e","#9333ea","#ca8a04","#334155"];
@@ -1553,8 +1583,10 @@
       var hB = (r[keyB]/maxB) * innerH;
       var xA = gx + groupW/2 - barW - 2;
       var xB = gx + groupW/2 + 2;
-      bars += '<rect x="'+xA+'" y="'+(padT+innerH-hA)+'" width="'+barW+'" height="'+Math.max(1,hA)+'" rx="2" fill="'+colorA+'"></rect>';
-      bars += '<rect x="'+xB+'" y="'+(padT+innerH-hB)+'" width="'+barW+'" height="'+Math.max(1,hB)+'" rx="2" fill="'+colorB+'"></rect>';
+      var ttA = r.label + " — Tickets: " + fmtInt(r[keyA]);
+      var ttB = r.label + " — Revenue: " + fmtCurrencyFull(r[keyB]);
+      bars += '<rect class="tt-point" data-tt="'+ttA+'" x="'+xA+'" y="'+(padT+innerH-hA)+'" width="'+barW+'" height="'+Math.max(1,hA)+'" rx="2" fill="'+colorA+'" style="cursor:pointer;"></rect>';
+      bars += '<rect class="tt-point" data-tt="'+ttB+'" x="'+xB+'" y="'+(padT+innerH-hB)+'" width="'+barW+'" height="'+Math.max(1,hB)+'" rx="2" fill="'+colorB+'" style="cursor:pointer;"></rect>';
       bars += '<text x="'+(gx+groupW/2)+'" y="'+(h-8)+'" font-size="9" fill="#64748b" text-anchor="middle">'+shortMonthLabel(r.key)+'</text>';
     });
     return '<svg viewBox="0 0 '+w+' '+h+'" style="width:100%;height:auto;display:block;">'+bars+'</svg>';
@@ -1581,14 +1613,17 @@
       var xT = gx + groupW/2 - barW - 2, xG = gx + groupW/2 + 2;
       var yT = tPct >= 0 ? midY - hT : midY;
       var yG = gPct >= 0 ? midY - hG : midY;
-      bars += '<rect x="'+xT+'" y="'+yT+'" width="'+barW+'" height="'+Math.max(1,hT)+'" rx="2" fill="#1d4ed8" opacity="0.9"></rect>';
-      bars += '<rect x="'+xG+'" y="'+yG+'" width="'+barW+'" height="'+Math.max(1,hG)+'" rx="2" fill="#15803d" opacity="0.9"></rect>';
+      var ttT = r.label + " — Ticket Growth: " + fmtSignedPct(tPct);
+      var ttG = r.label + " — Revenue Growth: " + fmtSignedPct(gPct);
+      bars += '<rect class="tt-point" data-tt="'+ttT+'" x="'+xT+'" y="'+yT+'" width="'+barW+'" height="'+Math.max(1,hT)+'" rx="2" fill="#1d4ed8" opacity="0.9" style="cursor:pointer;"></rect>';
+      bars += '<rect class="tt-point" data-tt="'+ttG+'" x="'+xG+'" y="'+yG+'" width="'+barW+'" height="'+Math.max(1,hG)+'" rx="2" fill="#15803d" opacity="0.9" style="cursor:pointer;"></rect>';
       bars += '<text x="'+(gx+groupW/2)+'" y="'+(h-8)+'" font-size="9" fill="#64748b" text-anchor="middle">'+shortMonthLabel(r.key)+'</text>';
     });
     return '<svg viewBox="0 0 '+w+' '+h+'" style="width:100%;height:auto;display:block;">'+bars+'</svg>';
   }
 
-  function buildTargetVsActualSVG(rows, key, target, color){
+  function buildTargetVsActualSVG(rows, key, target, color, fmtFn){
+    fmtFn = fmtFn || fmtInt;
     var w = 300, h = 170, padL = 8, padR = 8, padT = 10, padB = 24;
     var innerW = w - padL - padR, innerH = h - padT - padB;
     var n = rows.length;
@@ -1599,7 +1634,9 @@
     rows.forEach(function(r,i){
       var gx = padL + i*groupW + (groupW-barW)/2;
       var hV = (r[key]/maxVal) * innerH;
-      bars += '<rect x="'+gx+'" y="'+(padT+innerH-hV)+'" width="'+barW+'" height="'+Math.max(1,hV)+'" rx="2" fill="'+color+'" opacity="0.85"></rect>';
+      var pctOfTarget = target > 0 ? (r[key]/target*100) : null;
+      var tt = r.label + " — " + fmtFn(r[key]) + " (Target: " + fmtFn(target) + (pctOfTarget!==null ? ", " + fmtPct(pctOfTarget) : "") + ")";
+      bars += '<rect class="tt-point" data-tt="'+tt+'" x="'+gx+'" y="'+(padT+innerH-hV)+'" width="'+barW+'" height="'+Math.max(1,hV)+'" rx="2" fill="'+color+'" opacity="0.85" style="cursor:pointer;"></rect>';
       bars += '<text x="'+(gx+barW/2)+'" y="'+(h-8)+'" font-size="8.5" fill="#64748b" text-anchor="middle">'+shortMonthLabel(r.key)+'</text>';
     });
     var targetY = padT + innerH - (target/maxVal)*innerH;
@@ -1631,7 +1668,13 @@
 
     var lines = series.map(function(s){
       var pts = rows.map(function(r,i){ var v=s.get(r); return v===null||v===undefined ? null : xAt(i)+","+yAt(v); }).filter(function(p){return p!==null;});
-      var circles = rows.map(function(r,i){ var v=s.get(r); if(v===null||v===undefined) return ""; return '<circle cx="'+xAt(i)+'" cy="'+yAt(v)+'" r="2.6" fill="'+s.color+'"></circle>'; }).join("");
+      var circles = rows.map(function(r,i){
+        var v=s.get(r); if(v===null||v===undefined) return "";
+        var fmtFn = s.fmtFn || fmtPct;
+        var tt = r.label + (s.label ? " — " + s.label : "") + ": " + fmtFn(v);
+        return '<circle class="tt-point" data-tt="'+tt+'" cx="'+xAt(i)+'" cy="'+yAt(v)+'" r="6" fill="'+s.color+'" fill-opacity="0" stroke="none" style="pointer-events:all;cursor:pointer;"></circle>' +
+               '<circle cx="'+xAt(i)+'" cy="'+yAt(v)+'" r="2.6" fill="'+s.color+'" style="pointer-events:none;"></circle>';
+      }).join("");
       return '<polyline points="'+pts.join(" ")+'" fill="none" stroke="'+s.color+'" stroke-width="2"></polyline>' + circles;
     }).join("");
 
@@ -1642,23 +1685,42 @@
     return '<svg viewBox="0 0 '+w+' '+h+'" style="width:100%;height:auto;display:block;">'+refLine+lines+labels+'</svg>';
   }
 
+  // Builds a hoverable SVG ring chart (stroke-dasharray arc segments) — unlike a
+  // CSS conic-gradient div, each slice here is its own <circle> that can carry its
+  // own data-tt tooltip, so hovering the ring itself (not just the legend) works.
+  function buildDonutSVG(items, formatFn){
+    var size = 120, r = 42, cx = 60, cy = 60, strokeWidth = 20;
+    var circumference = 2 * Math.PI * r;
+    var total = items.reduce(function(s,it){ return s + it.value; }, 0) || 1;
+    var offsetAcc = 0;
+    var arcs = items.map(function(it,i){
+      var frac = it.value/total;
+      var dash = Math.max(0, frac*circumference - (items.length > 1 ? 1.5 : 0));
+      var gap = circumference - dash;
+      var rotation = (offsetAcc/total)*360 - 90;
+      offsetAcc += it.value;
+      var pct = (frac*100).toFixed(1);
+      var tt = escapeHtml(it.label) + ": " + formatFn(it.value) + " (" + pct + "%)";
+      return '<circle class="tt-point" data-tt="'+tt+'" cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="'+paletteColor(i)+'" ' +
+        'stroke-width="'+strokeWidth+'" stroke-dasharray="'+dash.toFixed(2)+' '+gap.toFixed(2)+'" ' +
+        'transform="rotate('+rotation.toFixed(2)+' '+cx+' '+cy+')" style="cursor:pointer;"></circle>';
+    }).join("");
+    return '<svg viewBox="0 0 '+size+' '+size+'" width="120" height="120" style="display:block;flex-shrink:0;">'+arcs+'</svg>';
+  }
+
   function buildDonutHTML(rows, key, formatFn){
     var total = rows.reduce(function(s,r){ return s + r[key]; }, 0);
     if(total <= 0) return '<div class="chart-empty">Not enough data yet.</div>';
-    var acc = 0;
-    var stops = rows.map(function(r,i){
-      var pct = r[key]/total*100;
-      var start = acc;
-      acc += pct;
-      return paletteColor(i) + " " + start.toFixed(2) + "% " + acc.toFixed(2) + "%";
-    }).join(", ");
+    formatFn = formatFn || fmtInt;
+    var items = rows.map(function(r){ return { label: shortMonthLabel(r.key), value: r[key] }; });
     var legend = rows.map(function(r,i){
       var pct = (r[key]/total*100).toFixed(1);
-      return '<div class="row"><span style="background:'+paletteColor(i)+';width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0;"></span>' +
+      var tt = shortMonthLabel(r.key) + ": " + formatFn(r[key]) + " (" + pct + "%)";
+      return '<div class="row tt-point" data-tt="'+tt+'" style="cursor:pointer;"><span style="background:'+paletteColor(i)+';width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0;"></span>' +
         shortMonthLabel(r.key) + " — " + pct + "%" + '</div>';
     }).join("");
     return '<div class="donut-wrap">' +
-      '<div class="donut" style="background:conic-gradient(' + stops + ');"></div>' +
+      buildDonutSVG(items, formatFn) +
       '<div class="donut-legend">' + legend + '</div>' +
       '</div>';
   }
@@ -1666,16 +1728,18 @@
   function buildHeatmapHTML(rows){
     if(rows.length === 0) return '<div class="chart-empty">Not enough data yet.</div>';
     var headerCells = rows.map(function(r){ return '<th>'+shortMonthLabel(r.key)+'</th>'; }).join("");
-    function rowHTML(label, values){
-      var cells = values.map(function(v){
+    function rowHTML(label, values, rawValues, targetFmtFn, target){
+      var cells = values.map(function(v,i){
         var c = pctToHeatColor(v);
         var text = (v===null||v===undefined) ? "—" : v.toFixed(0)+"%";
-        return '<td style="background:'+c.bg+';color:'+c.fg+';">'+text+'</td>';
+        var tt = (v===null||v===undefined) ? (rows[i].label + " — " + label + ": no data")
+          : rows[i].label + " — " + label + ": " + v.toFixed(1) + "% (" + targetFmtFn(rawValues[i]) + " of " + targetFmtFn(target) + " target)";
+        return '<td class="tt-point" data-tt="'+tt+'" style="background:'+c.bg+';color:'+c.fg+';cursor:pointer;">'+text+'</td>';
       }).join("");
       return '<tr><td class="metric-label">'+label+'</td>'+cells+'</tr>';
     }
-    var ticketRow = rowHTML("Ticket Target %", rows.map(function(r){ return r.ticketsVsTarget; }));
-    var gtvRow = rowHTML("Revenue Target %", rows.map(function(r){ return r.gtvVsTarget; }));
+    var ticketRow = rowHTML("Ticket Target %", rows.map(function(r){ return r.ticketsVsTarget; }), rows.map(function(r){ return r.tickets; }), fmtInt, state.targets.monthlyTickets);
+    var gtvRow = rowHTML("Revenue Target %", rows.map(function(r){ return r.gtvVsTarget; }), rows.map(function(r){ return r.gtv; }), fmtCurrencyFull, state.targets.monthlyGtv);
     return '<table class="heatmap-table"><thead><tr><th></th>'+headerCells+'</tr></thead><tbody>'+ticketRow+gtvRow+'</tbody></table>';
   }
 
@@ -1683,7 +1747,7 @@
     var aovRows = rows.filter(function(r){ return r.tickets > 0; });
     if(aovRows.length < 2) return null;
     return buildMultiLineChartSVG(aovRows, [
-      { get:function(r){ return r.gtv/r.tickets; }, color:"#7c3aed" }
+      { get:function(r){ return r.gtv/r.tickets; }, color:"#7c3aed", label:"Avg Revenue/Ticket", fmtFn:fmtCurrencyFull }
     ]);
   }
 
@@ -1705,7 +1769,8 @@
     if(maxVal <= 0) maxVal = 1;
     var rowsHtml = top.map(function(e){
       var pct = Math.max(2, (e[key]/maxVal)*100);
-      return '<div class="ebar-row">' +
+      var tt = escapeHtml(e.name) + ": " + fmtFn(e[key]);
+      return '<div class="ebar-row tt-point" data-tt="'+tt+'" style="cursor:pointer;">' +
         '<div class="ebar-label" title="'+escapeHtml(e.name)+'">'+escapeHtml(e.name)+'</div>' +
         '<div class="ebar-track"><div class="ebar-fill" style="width:'+pct+'%;background:'+color+';"></div></div>' +
         '<div class="ebar-value">'+fmtFn(e[key])+'</div>' +
@@ -1720,24 +1785,20 @@
     var sorted = events.slice().sort(function(a,b){ return b[key]-a[key]; });
     var total = sorted.reduce(function(s,e){ return s+e[key]; }, 0);
     if(total <= 0) return '<div class="chart-empty">Not enough data yet.</div>';
+    var fmtFn = key === "revenue" ? fmtCurrencyFull : fmtInt;
     var top = sorted.slice(0, limit);
     var restSum = sorted.slice(limit).reduce(function(s,e){ return s+e[key]; }, 0);
     var items = top.map(function(e){ return { label: e.name, value: e[key] }; });
     if(restSum > 0) items.push({ label: "Other events", value: restSum });
 
-    var acc = 0;
-    var stops = items.map(function(it,i){
-      var pct = it.value/total*100;
-      var start = acc; acc += pct;
-      return paletteColor(i) + " " + start.toFixed(2) + "% " + acc.toFixed(2) + "%";
-    }).join(", ");
     var legend = items.map(function(it,i){
       var pct = (it.value/total*100).toFixed(1);
-      return '<div class="row"><span style="background:'+paletteColor(i)+';width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0;"></span>' +
+      var tt = escapeHtml(it.label) + ": " + fmtFn(it.value) + " (" + pct + "%)";
+      return '<div class="row tt-point" data-tt="'+tt+'" style="cursor:pointer;"><span style="background:'+paletteColor(i)+';width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0;"></span>' +
         escapeHtml(it.label) + " — " + pct + "%" + '</div>';
     }).join("");
     return '<div class="donut-wrap">' +
-      '<div class="donut" style="background:conic-gradient(' + stops + ');"></div>' +
+      buildDonutSVG(items, fmtFn) +
       '<div class="donut-legend">' + legend + '</div>' +
       '</div>';
   }
@@ -1889,8 +1950,8 @@
       "Target vs Actual",
       "Monthly actuals against the fixed monthly target",
       '<div class="chart-row-split">' +
-        '<div><div class="chart-subtitle" style="margin-bottom:4px;">Tickets</div>' + buildTargetVsActualSVG(rows, "tickets", state.targets.monthlyTickets, "#1d4ed8") + '</div>' +
-        '<div><div class="chart-subtitle" style="margin-bottom:4px;">Revenue</div>' + buildTargetVsActualSVG(rows, "gtv", state.targets.monthlyGtv, "#15803d") + '</div>' +
+        '<div><div class="chart-subtitle" style="margin-bottom:4px;">Tickets</div>' + buildTargetVsActualSVG(rows, "tickets", state.targets.monthlyTickets, "#1d4ed8", fmtInt) + '</div>' +
+        '<div><div class="chart-subtitle" style="margin-bottom:4px;">Revenue</div>' + buildTargetVsActualSVG(rows, "gtv", state.targets.monthlyGtv, "#15803d", fmtCurrencyFull) + '</div>' +
       '</div>'
     );
 
@@ -1899,8 +1960,8 @@
       "Cumulative Performance (" + year + ")",
       "Cumulative progress toward each annual target",
       buildMultiLineChartSVG(rows.filter(function(r){return r.year===year;}), [
-        { get:function(r){ return r.annualTicketPct; }, color:"#1d4ed8" },
-        { get:function(r){ return r.annualGtvPct; }, color:"#15803d" }
+        { get:function(r){ return r.annualTicketPct; }, color:"#1d4ed8", label:"Ticket Progress", fmtFn:function(v){return fmtPct(v);} },
+        { get:function(r){ return r.annualGtvPct; }, color:"#15803d", label:"Revenue Progress", fmtFn:function(v){return fmtPct(v);} }
       ], { refValue:100, refLabel:"100% of annual target" }) +
       '<div class="chart-legend"><span><span class="dot" style="background:#1d4ed8;"></span>Ticket Progress %</span><span><span class="dot" style="background:#15803d;"></span>Revenue Progress %</span></div>'
     );
@@ -1909,14 +1970,14 @@
     html += chartCard(
       "Revenue Contribution by Month",
       "Share of total recorded revenue",
-      buildDonutHTML(rows, "gtv")
+      buildDonutHTML(rows, "gtv", fmtCurrencyFull)
     );
 
     // 6. Ticket contribution by month
     html += chartCard(
       "Ticket Contribution by Month",
       "Share of total recorded tickets",
-      buildDonutHTML(rows, "tickets")
+      buildDonutHTML(rows, "tickets", fmtInt)
     );
 
     // 7. Performance heatmap (optional)
@@ -2087,7 +2148,7 @@
       ticketsSub.innerHTML = '<span class="kpi-dot dot-'+(ta.cls==="up"?"up":(ta.cls==="down"?"down":"flat"))+'"></span>' + ta.sym + " " + fmtSignedPct(latest.ticketsPct) + " vs " + prev.label;
       ticketsSub.className = "kpi-sub " + ta.cls;
     }
-    document.getElementById("kpiTicketsSpark").innerHTML = buildSparklineSVG(rows.map(function(r){return r.tickets;}), "#1d4ed8");
+    document.getElementById("kpiTicketsSpark").innerHTML = buildSparklineSVG(rows.map(function(r){return r.tickets;}), "#1d4ed8", rows.map(function(r){return r.label;}), fmtInt);
 
     // Revenue
     gtvEl.textContent = fmtCurrencyCompact(latest.gtv);
@@ -2099,7 +2160,7 @@
       gtvSub.innerHTML = '<span class="kpi-dot dot-'+(ga.cls==="up"?"up":(ga.cls==="down"?"down":"flat"))+'"></span>' + ga.sym + " " + fmtSignedPct(latest.gtvPct) + " vs " + prev.label;
       gtvSub.className = "kpi-sub " + ga.cls;
     }
-    document.getElementById("kpiGtvSpark").innerHTML = buildSparklineSVG(rows.map(function(r){return r.gtv;}), "#15803d");
+    document.getElementById("kpiGtvSpark").innerHTML = buildSparklineSVG(rows.map(function(r){return r.gtv;}), "#15803d", rows.map(function(r){return r.label;}), fmtCurrencyCompact);
 
     // Ticket Target Achievement
     var tAch = latest.ticketsVsTarget;
@@ -2402,7 +2463,11 @@
 
     listEl.innerHTML = top.map(function(e,i){
       var pct = totalRevenue > 0 ? (e.revenue/totalRevenue*100) : 0;
-      return '<div class="event-row">' +
+      var tt = escapeHtml(e.name) + "\n" +
+        fmtInt(e.tickets) + " tickets (" + fmtInt(e.free) + " free, " + fmtInt(e.paid) + " paid, " + fmtInt(e.pos) + " POS)\n" +
+        fmtInt(e.orders) + " orders · Face value " + fmtCurrencyFull(e.faceValue) + "\n" +
+        "Revenue " + fmtCurrencyFull(e.revenue) + " (" + fmtPct(pct,0) + " of month)";
+      return '<div class="event-row tt-point" data-tt="'+tt+'" style="cursor:pointer;">' +
         '<div class="event-rank">'+(i+1)+'</div>' +
         '<div class="event-info">' +
           '<div class="event-name" title="'+escapeHtml(e.name)+'">'+escapeHtml(e.name)+'</div>' +
@@ -2546,7 +2611,7 @@
       canvas.width = w*scale;
       canvas.height = h*scale;
       var ctx = canvas.getContext("2d");
-      ctx.fillStyle = "#f6f8fb";
+      ctx.fillStyle = "#FAF9F6";
       ctx.fillRect(0,0,canvas.width,canvas.height);
       ctx.drawImage(img, 0, 0, w*scale, h*scale);
       URL.revokeObjectURL(url);
@@ -2576,8 +2641,50 @@
     img.src = url;
   }
 
+  // ---------- Shared hover tooltip ----------
+  // Delegated on document so it works for chart content re-rendered at any time,
+  // without needing to re-attach listeners after every render() call. Any element
+  // with a data-tt attribute — SVG shapes, HTML bar fills, table cells, list rows —
+  // shows its tooltip text on hover and follows the cursor until the pointer leaves.
+  function initChartTooltips(){
+    var tip = document.getElementById("chartTooltip");
+    if(!tip) return;
+
+    function findTarget(node){
+      while(node && node !== document){
+        if(node.getAttribute && node.getAttribute("data-tt") !== null) return node;
+        node = node.parentNode;
+      }
+      return null;
+    }
+
+    document.addEventListener("mouseover", function(e){
+      var target = findTarget(e.target);
+      if(!target) return;
+      tip.textContent = target.getAttribute("data-tt");
+      tip.style.display = "block";
+    });
+
+    document.addEventListener("mousemove", function(e){
+      if(tip.style.display !== "block") return;
+      var vw = window.innerWidth || 1200, vh = window.innerHeight || 800;
+      var x = Math.min(e.clientX + 14, vw - 240);
+      var y = Math.min(e.clientY + 16, vh - 70);
+      tip.style.left = x + "px";
+      tip.style.top = y + "px";
+    });
+
+    document.addEventListener("mouseout", function(e){
+      var target = findTarget(e.target);
+      if(!target) return;
+      if(e.relatedTarget && target.contains && target.contains(e.relatedTarget)) return;
+      tip.style.display = "none";
+    });
+  }
+
   // ---------- Event wiring ----------
   document.getElementById("refreshDataBtn").addEventListener("click", function(){ loadFromSheet(false); });
+  initChartTooltips();
 
   // Quiet text links to the two source Sheets, not buttons — real hrefs so right-click,
   // cmd/ctrl-click, etc. all just work.
