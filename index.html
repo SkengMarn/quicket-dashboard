@@ -468,6 +468,78 @@
     white-space:nowrap;
   }
 
+  /* ---------- ROW 5: EVENT PORTFOLIO GLANCE ---------- */
+  .event-glance-row{
+    display:grid;
+    grid-template-columns:repeat(6,1fr);
+    gap:10px;
+    flex:0 0 auto;
+  }
+  .glance-tile{
+    background:#fff;
+    border:1px solid var(--gray-100);
+    border-radius:10px;
+    padding:9px 12px;
+    box-shadow:var(--shadow);
+    display:flex;
+    flex-direction:column;
+    gap:3px;
+    min-width:0;
+  }
+  .glance-label{
+    font-size:8.5px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.3px;
+    color:var(--gray-500);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .glance-value{
+    font-size:15px;
+    font-weight:800;
+    color:var(--gray-900);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  /* ---------- EVENT SPOTLIGHTS (Detailed Analytics) ---------- */
+  .spotlight-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:12px;
+    margin-top:6px;
+  }
+  .spotlight-item{
+    background:var(--gray-50);
+    border-radius:10px;
+    padding:10px 12px;
+    min-width:0;
+  }
+  .spotlight-label{
+    font-size:10px;
+    font-weight:700;
+    color:var(--gray-500);
+    text-transform:uppercase;
+    letter-spacing:.3px;
+  }
+  .spotlight-name{
+    font-size:12.5px;
+    font-weight:800;
+    color:var(--gray-900);
+    margin-top:3px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .spotlight-value{
+    font-size:11.5px;
+    color:var(--gray-700);
+    margin-top:2px;
+  }
+
   /* ---------- EVENT BAR CHARTS (Detailed Analytics) ---------- */
   .ebar-chart{ display:flex; flex-direction:column; gap:8px; }
   .ebar-row{ display:flex; align-items:center; gap:8px; }
@@ -798,11 +870,16 @@
     .analytics-grid{ grid-template-columns:1fr; }
     .chart-row-split{ grid-template-columns:1fr; }
     .donut-wrap{ flex-direction:column; align-items:flex-start; }
+    .row-4{ grid-template-columns:1fr; }
+    .table-section, .top-events-panel{ grid-column:span 1; }
+    .event-glance-row{ grid-template-columns:repeat(3,1fr); }
+    .spotlight-grid{ grid-template-columns:1fr; }
   }
   @media (max-width:560px){
     .kpi-strip{ grid-template-columns:1fr; }
     .header-stats{ flex-wrap:wrap; gap:12px; }
     .header-stat{ border-right:none; padding-right:0; }
+    .event-glance-row{ grid-template-columns:repeat(2,1fr); }
   }
 </style>
 </head>
@@ -976,6 +1053,9 @@
         <div class="empty-note" id="topEventsEmptyNote" style="display:none;">No event data yet for this month. Add an "Events &lt;Mon&gt; &lt;Year&gt;" tab to the Months sheet.</div>
       </div>
     </section>
+
+    <!-- ROW 5: EVENT PORTFOLIO AT A GLANCE (buyer-behavior KPIs) -->
+    <section class="event-glance-row" id="eventGlanceRow" style="display:none;"></section>
 
   </main>
 </div>
@@ -1662,12 +1742,100 @@
       '</div>';
   }
 
+  // Aggregates the current month's events into portfolio-level KPIs: buyer-behavior
+  // efficiency metrics (AOV, ticket price, tickets/order, POS adoption, paid ratio),
+  // revenue concentration, and the standout events across revenue/attendance/AOV.
+  function computeEventPortfolio(events){
+    var totals = events.reduce(function(acc,e){
+      acc.tickets += e.tickets; acc.free += e.free; acc.paid += e.paid;
+      acc.pos += e.pos; acc.orders += e.orders; acc.faceValue += e.faceValue; acc.revenue += e.revenue;
+      return acc;
+    }, {tickets:0, free:0, paid:0, pos:0, orders:0, faceValue:0, revenue:0});
+
+    var aov = totals.orders > 0 ? totals.revenue/totals.orders : 0;
+    var avgTicketPrice = totals.tickets > 0 ? totals.revenue/totals.tickets : 0;
+    var ticketsPerOrder = totals.orders > 0 ? totals.tickets/totals.orders : 0;
+    var posAdoptionPct = totals.paid > 0 ? totals.pos/totals.paid*100 : 0;
+    var paidRatioPct = totals.tickets > 0 ? totals.paid/totals.tickets*100 : 0;
+
+    var sortedByRevenue = events.slice().sort(function(a,b){ return b.revenue-a.revenue; });
+    var top5Revenue = sortedByRevenue.slice(0,5).reduce(function(s,e){ return s+e.revenue; }, 0);
+    var revenueConcentrationPct = totals.revenue > 0 ? top5Revenue/totals.revenue*100 : 0;
+
+    var highestRevenueEvent = sortedByRevenue.length ? sortedByRevenue[0] : null;
+    var highestAttendanceEvent = events.length ? events.slice().sort(function(a,b){ return b.tickets-a.tickets; })[0] : null;
+    var eventsWithOrders = events.filter(function(e){ return e.orders > 0; });
+    var highestAovEvent = eventsWithOrders.length
+      ? eventsWithOrders.slice().sort(function(a,b){ return (b.revenue/b.orders) - (a.revenue/a.orders); })[0]
+      : null;
+
+    return {
+      totals: totals,
+      aov: aov,
+      avgTicketPrice: avgTicketPrice,
+      ticketsPerOrder: ticketsPerOrder,
+      posAdoptionPct: posAdoptionPct,
+      paidRatioPct: paidRatioPct,
+      revenueConcentrationPct: revenueConcentrationPct,
+      highestRevenueEvent: highestRevenueEvent,
+      highestAttendanceEvent: highestAttendanceEvent,
+      highestAovEvent: highestAovEvent
+    };
+  }
+
+  // Blended 🟢/🟡/🔴 health signal per event: compares each event's AOV, POS
+  // adoption, paid-ticket ratio, and revenue-per-ticket against this month's
+  // portfolio average, then averages the four tier scores.
+  function eventHealth(e, portfolio){
+    function tier(val, avg){
+      if(avg <= 0) return 1;
+      var ratio = val/avg;
+      if(ratio >= 1.1) return 2;
+      if(ratio >= 0.7) return 1;
+      return 0;
+    }
+    var eAov = e.orders > 0 ? e.revenue/e.orders : 0;
+    var ePos = e.paid > 0 ? e.pos/e.paid*100 : 0;
+    var ePaidRatio = e.tickets > 0 ? e.paid/e.tickets*100 : 0;
+    var eRevPerTicket = e.tickets > 0 ? e.revenue/e.tickets : 0;
+
+    var score = (
+      tier(eAov, portfolio.aov) +
+      tier(ePos, portfolio.posAdoptionPct) +
+      tier(ePaidRatio, portfolio.paidRatioPct) +
+      tier(eRevPerTicket, portfolio.avgTicketPrice)
+    ) / 4;
+
+    if(score >= 1.5) return { icon:"🟢", label:"Excellent" };
+    if(score >= 0.75) return { icon:"🟡", label:"Good" };
+    return { icon:"🔴", label:"Needs Attention" };
+  }
+
+  function buildSpotlightGridHTML(portfolio){
+    function item(labelText, ev, valueText){
+      if(!ev){
+        return '<div class="spotlight-item"><div class="spotlight-label">'+labelText+'</div><div class="spotlight-name">—</div></div>';
+      }
+      return '<div class="spotlight-item">' +
+        '<div class="spotlight-label">'+labelText+'</div>' +
+        '<div class="spotlight-name" title="'+escapeHtml(ev.name)+'">'+escapeHtml(ev.name)+'</div>' +
+        '<div class="spotlight-value">'+valueText+'</div>' +
+      '</div>';
+    }
+    return '<div class="spotlight-grid">' +
+      item("🏆 Highest Revenue", portfolio.highestRevenueEvent, portfolio.highestRevenueEvent ? fmtCurrencyCompact(portfolio.highestRevenueEvent.revenue) : "") +
+      item("👥 Highest Attendance", portfolio.highestAttendanceEvent, portfolio.highestAttendanceEvent ? fmtInt(portfolio.highestAttendanceEvent.tickets) + " tickets" : "") +
+      item("⭐ Highest Order Value", portfolio.highestAovEvent, portfolio.highestAovEvent ? fmtCurrencyFull(portfolio.highestAovEvent.revenue/portfolio.highestAovEvent.orders) + " AOV" : "") +
+    '</div>';
+  }
+
   // Full sortable-by-revenue table of every event recorded for the month.
-  function buildEventsTableHTML(events){
+  function buildEventsTableHTML(events, portfolio){
     var sorted = events.slice().sort(function(a,b){ return b.revenue-a.revenue; });
     var totalRevenue = sorted.reduce(function(s,e){ return s+e.revenue; }, 0) || 1;
     var rowsHtml = sorted.map(function(e){
       var pct = (e.revenue/totalRevenue*100).toFixed(1);
+      var health = eventHealth(e, portfolio);
       return '<tr>' +
         '<td>'+escapeHtml(e.name)+'</td>' +
         '<td>'+fmtInt(e.tickets)+'</td>' +
@@ -1677,11 +1845,12 @@
         '<td>'+fmtCurrencyFull(e.faceValue)+'</td>' +
         '<td>'+fmtCurrencyFull(e.revenue)+'</td>' +
         '<td>'+pct+'%</td>' +
+        '<td title="'+health.label+'">'+health.icon+'</td>' +
       '</tr>';
     }).join("");
     return '<div class="table-scroll" style="max-height:260px;">' +
       '<table><thead><tr>' +
-        '<th>Event</th><th>Tickets</th><th>Free</th><th>Paid</th><th>Orders</th><th>Face Value</th><th>Revenue</th><th>% Rev</th>' +
+        '<th>Event</th><th>Tickets</th><th>Free</th><th>Paid</th><th>Orders</th><th>Face Value</th><th>Revenue</th><th>% Rev</th><th>Health</th>' +
       '</tr></thead><tbody>' + rowsHtml + '</tbody></table>' +
     '</div>';
   }
@@ -1787,6 +1956,7 @@
       );
     }
 
+    var portfolio = computeEventPortfolio(state.events);
     var html = "";
     html += chartCard(
       "Top Events by Revenue (" + label + ")",
@@ -1804,9 +1974,15 @@
       buildEventDonutHTML(state.events, "revenue")
     );
     html += chartCard(
+      "Event Spotlights (" + label + ")",
+      "Standout events this month across revenue, attendance, and order value",
+      buildSpotlightGridHTML(portfolio),
+      "full"
+    );
+    html += chartCard(
       "Event Breakdown (" + label + ")",
-      "All events recorded for this month, sorted by revenue",
-      buildEventsTableHTML(state.events),
+      "All events recorded for this month, sorted by revenue — Health blends Average Order Value, POS adoption, paid-ticket ratio, and revenue per ticket against this month's portfolio average",
+      buildEventsTableHTML(state.events, portfolio),
       "full"
     );
     return html;
@@ -1847,6 +2023,7 @@
     renderSummaryCards(rows);
     renderTable(rows);
     renderTopEvents();
+    renderEventGlance();
     renderAnalytics(rows);
 
     // Keep an already-open analytics panel correctly sized if the underlying data changes
@@ -2233,6 +2410,29 @@
         '</div>' +
         '<div class="event-revenue">'+fmtCurrencyCompact(e.revenue)+'</div>' +
       '</div>';
+    }).join("");
+  }
+
+  // ---------- Event Portfolio at a Glance (main view) ----------
+  function renderEventGlance(){
+    var row = document.getElementById("eventGlanceRow");
+    if(!state.events || state.events.length === 0){
+      row.style.display = "none";
+      row.innerHTML = "";
+      return;
+    }
+    row.style.display = "grid";
+    var p = computeEventPortfolio(state.events);
+    var tiles = [
+      { label:"Avg Order Value", value: fmtCurrencyFull(p.aov) },
+      { label:"Avg Ticket Price", value: fmtCurrencyFull(p.avgTicketPrice) },
+      { label:"Tickets / Order", value: p.ticketsPerOrder.toFixed(1) },
+      { label:"POS Adoption", value: fmtPct(p.posAdoptionPct,0) },
+      { label:"Paid Ticket Ratio", value: fmtPct(p.paidRatioPct,0) },
+      { label:"Top 5 Rev. Concentration", value: fmtPct(p.revenueConcentrationPct,0) }
+    ];
+    row.innerHTML = tiles.map(function(t){
+      return '<div class="glance-tile"><div class="glance-label">'+t.label+'</div><div class="glance-value">'+t.value+'</div></div>';
     }).join("");
   }
 
