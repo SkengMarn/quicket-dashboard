@@ -467,6 +467,15 @@
     color:var(--gray-900);
     white-space:nowrap;
   }
+  .event-mini-bar{
+    display:flex;
+    height:4px;
+    border-radius:3px;
+    overflow:hidden;
+    background:var(--gray-100);
+    margin-top:4px;
+  }
+  .event-mini-seg{ height:100%; }
 
   /* ---------- ROW 5: EVENT PORTFOLIO GLANCE ---------- */
   .event-glance-row{
@@ -503,6 +512,31 @@
     white-space:nowrap;
     overflow:hidden;
     text-overflow:ellipsis;
+  }
+  .glance-mini-bar{
+    display:flex;
+    height:5px;
+    border-radius:3px;
+    overflow:hidden;
+    background:var(--gray-100);
+    margin-top:5px;
+  }
+  .glance-mini-seg{ height:100%; }
+  .glance-mini-legend{
+    display:flex;
+    gap:7px;
+    margin-top:4px;
+    font-size:8px;
+    color:var(--gray-500);
+    font-weight:600;
+    white-space:nowrap;
+    overflow:hidden;
+  }
+  .glance-mini-legend .dot{
+    display:inline-block;
+    width:5px;height:5px;
+    border-radius:50%;
+    margin-right:2px;
   }
 
   /* ---------- EVENT SPOTLIGHTS (Detailed Analytics) ---------- */
@@ -2083,6 +2117,49 @@
     return '<div class="ebar-chart">'+rowsHtml+'</div>';
   }
 
+  // Same idea as buildEventsBarHTML, but each bar is split into two colored
+  // segments — POS tickets vs everything else (online/advance) — so the two
+  // add up to that event's total ticket count. Lets you see at a glance which
+  // events actually sold through POS and which didn't, not just the overall
+  // total, since one huge event could otherwise hide a lot of zero-POS events.
+  function buildEventsStackedTicketsBarHTML(events, limit){
+    limit = limit || 8;
+    var top = events.slice().sort(function(a,b){ return b.tickets-a.tickets; }).slice(0, limit);
+    if(top.length === 0) return '<div class="chart-empty">Not enough data yet.</div>';
+    var maxVal = top[0].tickets || 1;
+    if(maxVal <= 0) maxVal = 1;
+    var posColor = "#f59e0b", otherColor = "#1d4ed8";
+    var rowsHtml = top.map(function(e){
+      var otherTickets = Math.max(0, e.tickets - e.pos);
+      var posPctOfEvent = e.tickets > 0 ? (e.pos/e.tickets*100) : 0;
+      var otherPctOfEvent = e.tickets > 0 ? (otherTickets/e.tickets*100) : 0;
+      var otherWidthPct = (otherTickets/maxVal)*100;
+      var posWidthPct = (e.pos/maxVal)*100;
+      var totalWidthPct = otherWidthPct + posWidthPct;
+      if(totalWidthPct > 0 && totalWidthPct < 2){
+        var scale = 2/totalWidthPct;
+        otherWidthPct *= scale;
+        posWidthPct *= scale;
+      }
+      var otherTt = escapeHtml(e.name) + "\nOther tickets (online/advance): " + fmtInt(otherTickets) + " (" + otherPctOfEvent.toFixed(0) + "% of this event's " + fmtInt(e.tickets) + " tickets)";
+      var posTt = escapeHtml(e.name) + "\nPOS tickets: " + fmtInt(e.pos) + " (" + posPctOfEvent.toFixed(0) + "% of this event's " + fmtInt(e.tickets) + " tickets)";
+      return '<div class="ebar-row">' +
+        '<div class="ebar-label" title="'+escapeHtml(e.name)+'">'+escapeHtml(e.name)+'</div>' +
+        '<div class="ebar-track" style="display:flex;">' +
+          (otherWidthPct > 0 ? '<div class="ebar-fill tt-point" data-tt="'+otherTt+'" style="width:'+otherWidthPct+'%;background:'+otherColor+';border-radius:0;cursor:pointer;"></div>' : '') +
+          (posWidthPct > 0 ? '<div class="ebar-fill tt-point" data-tt="'+posTt+'" style="width:'+posWidthPct+'%;background:'+posColor+';border-radius:0;cursor:pointer;"></div>' : '') +
+        '</div>' +
+        '<div class="ebar-value">'+fmtInt(e.tickets)+'</div>' +
+      '</div>';
+    }).join("");
+    return '<div class="ebar-chart">'+rowsHtml+
+      '<div class="chart-legend" style="margin-top:8px;">' +
+        '<span><span class="dot" style="background:'+otherColor+';"></span>Other tickets (online/advance)</span>' +
+        '<span><span class="dot" style="background:'+posColor+';"></span>POS tickets</span>' +
+      '</div>' +
+    '</div>';
+  }
+
   // Donut of top N events by a metric, with the long tail grouped into "Other events".
   function buildEventDonutHTML(events, key, limit){
     limit = limit || 6;
@@ -2120,7 +2197,15 @@
     var aov = totals.orders > 0 ? totals.revenue/totals.orders : 0;
     var avgTicketPrice = totals.tickets > 0 ? totals.revenue/totals.tickets : 0;
     var ticketsPerOrder = totals.orders > 0 ? totals.tickets/totals.orders : 0;
+    // Ticket-weighted: what share of paid tickets went through POS. On its own this
+    // can be misleading — one huge event that leans heavily on POS can make the whole
+    // month look POS-adopted even if every other event sold zero POS tickets. So we
+    // also track breadth (how many events used POS at all, regardless of volume) and
+    // blend the two, so a single big event can't carry the number by itself.
     var posAdoptionPct = totals.paid > 0 ? totals.pos/totals.paid*100 : 0;
+    var posEventsUsingCount = events.filter(function(e){ return e.pos > 0; }).length;
+    var posEventCoveragePct = events.length > 0 ? posEventsUsingCount/events.length*100 : 0;
+    var posAdoptionBlendedPct = (posAdoptionPct + posEventCoveragePct) / 2;
     var paidRatioPct = totals.tickets > 0 ? totals.paid/totals.tickets*100 : 0;
 
     var sortedByRevenue = events.slice().sort(function(a,b){ return b.revenue-a.revenue; });
@@ -2140,6 +2225,10 @@
       avgTicketPrice: avgTicketPrice,
       ticketsPerOrder: ticketsPerOrder,
       posAdoptionPct: posAdoptionPct,
+      posEventCoveragePct: posEventCoveragePct,
+      posEventsUsingCount: posEventsUsingCount,
+      posEventsTotalCount: events.length,
+      posAdoptionBlendedPct: posAdoptionBlendedPct,
       paidRatioPct: paidRatioPct,
       revenueConcentrationPct: revenueConcentrationPct,
       highestRevenueEvent: highestRevenueEvent,
@@ -2397,8 +2486,8 @@
     );
     html += chartCard(
       "Top Events by Tickets Sold (" + label + ")",
-      "Highest ticket volume events this month",
-      buildEventsBarHTML(state.events, "tickets", "#1d4ed8", fmtInt)
+      "Highest ticket volume events this month — split by POS vs other (online/advance) tickets",
+      buildEventsStackedTicketsBarHTML(state.events)
     );
     html += chartCard(
       "Event Revenue Share",
@@ -3177,11 +3266,28 @@
         fmtInt(e.orders) + " orders · Face value " + fmtCurrencyFull(e.faceValue) + "\n" +
         "Revenue " + fmtCurrencyFull(e.revenue) + " (" + fmtPct(pct,0) + " of month)" +
         (vsAvgLine ? "\n" + vsAvgLine : "");
+
+      // Thin composition bar: this event's own tickets split into other (online/
+      // advance) vs POS — same colors/idea as the Detailed Analytics chart, just
+      // scaled to 100% of this one event's tickets rather than compared across events.
+      var otherTickets = Math.max(0, e.tickets - e.pos);
+      var otherPct = e.tickets > 0 ? (otherTickets/e.tickets*100) : 0;
+      var posPct = e.tickets > 0 ? (e.pos/e.tickets*100) : 0;
+      var otherSegTt = escapeHtml(e.name) + "\nOther tickets (online/advance): " + fmtInt(otherTickets) + " (" + otherPct.toFixed(0) + "%)";
+      var posSegTt = escapeHtml(e.name) + "\nPOS tickets: " + fmtInt(e.pos) + " (" + posPct.toFixed(0) + "%)";
+      var miniBar = e.tickets > 0
+        ? '<div class="event-mini-bar">' +
+            (otherPct > 0 ? '<div class="event-mini-seg tt-point" data-tt="'+otherSegTt+'" style="width:'+otherPct+'%;background:#1d4ed8;"></div>' : '') +
+            (posPct > 0 ? '<div class="event-mini-seg tt-point" data-tt="'+posSegTt+'" style="width:'+posPct+'%;background:#f59e0b;"></div>' : '') +
+          '</div>'
+        : "";
+
       return '<div class="event-row tt-point" data-tt="'+tt+'" style="cursor:pointer;">' +
         '<div class="event-rank">'+(i+1)+'</div>' +
         '<div class="event-info">' +
           '<div class="event-name" title="'+escapeHtml(e.name)+'">'+escapeHtml(e.name)+'</div>' +
           '<div class="event-sub">'+fmtInt(e.tickets)+' tickets · '+fmtPct(pct,0)+' of month revenue</div>' +
+          miniBar +
         '</div>' +
         '<div class="event-revenue">'+fmtCurrencyCompact(e.revenue)+'</div>' +
       '</div>';
@@ -3226,15 +3332,36 @@
         tip:"Average revenue per ticket sold (Revenue ÷ Tickets). Reflects your event mix — more premium or paid events pull this up, more free or discounted tickets pull it down.\n\n" + spreadLine(priceSpread, fmtCurrencyFull) },
       { label:"Tickets / Order", value: p.ticketsPerOrder.toFixed(1),
         tip:"Average number of tickets bought in a single order. Higher numbers suggest group buying — friends or families purchasing together in one transaction.\n\n" + spreadLine(tpoSpread, function(v){return v.toFixed(1);}) },
-      { label:"POS Adoption", value: fmtPct(p.posAdoptionPct,0),
-        tip:"Share of paid tickets sold at point-of-sale (on-site/at the door) rather than online in advance. High POS share can mean strong walk-up demand, but less advance revenue certainty for organizers.\n\n" + spreadLine(posSpread, function(v){return fmtPct(v,0);}) },
-      { label:"Paid Ticket Ratio", value: fmtPct(p.paidRatioPct,0),
-        tip:"Share of all tickets that were paid rather than free. A rising ratio means events are converting more attendees into paying customers rather than giving tickets away.\n\n" + spreadLine(paidSpread, function(v){return fmtPct(v,0);}) },
+      { label:"POS Adoption (Blend)", value: fmtPct(p.posAdoptionBlendedPct,0),
+        tip:"Blends two views so one big event can't hide the rest: " + fmtPct(p.posAdoptionPct,0) + " of all paid tickets went through POS, but only " + p.posEventsUsingCount + " of " + p.posEventsTotalCount + " events (" + fmtPct(p.posEventCoveragePct,0) + ") used POS at all. If a single high-volume event drives most of that ticket share while most other events used no POS, the blended score (a straight average of the two) drops to reflect that — instead of the ticket-weighted number alone making the whole month look POS-adopted.\n\n" + spreadLine(posSpread, function(v){return fmtPct(v,0);}) },
+      (function(){
+        // Free + Paid always sum to total tickets, and Paid itself splits into
+        // POS vs online/advance — so the ratio can be shown as one 3-color bar
+        // (Free / Paid-Online / Paid-POS) instead of just a single percentage.
+        var free = p.totals.free, paidOnline = Math.max(0, p.totals.paid - p.totals.pos), paidPos = p.totals.pos;
+        var total = p.totals.tickets || 1;
+        var freePct = free/total*100, paidOnlinePct = paidOnline/total*100, paidPosPct = paidPos/total*100;
+        var freeColor = "var(--gray-300)", onlineColor = "#1d4ed8", posColor = "#f59e0b";
+        var bar = '<div class="glance-mini-bar">' +
+            (freePct > 0 ? '<div class="glance-mini-seg" style="width:'+freePct+'%;background:'+freeColor+';"></div>' : '') +
+            (paidOnlinePct > 0 ? '<div class="glance-mini-seg" style="width:'+paidOnlinePct+'%;background:'+onlineColor+';"></div>' : '') +
+            (paidPosPct > 0 ? '<div class="glance-mini-seg" style="width:'+paidPosPct+'%;background:'+posColor+';"></div>' : '') +
+          '</div>' +
+          '<div class="glance-mini-legend">' +
+            '<span><span class="dot" style="background:'+freeColor+';"></span>'+fmtPct(freePct,0)+' free</span>' +
+            '<span><span class="dot" style="background:'+onlineColor+';"></span>'+fmtPct(paidOnlinePct,0)+' online</span>' +
+            '<span><span class="dot" style="background:'+posColor+';"></span>'+fmtPct(paidPosPct,0)+' POS</span>' +
+          '</div>';
+        return {
+          label:"Paid Ticket Ratio", value: fmtPct(p.paidRatioPct,0), extra: bar,
+          tip:"Share of all tickets that were paid rather than free (" + fmtPct(paidPosPct+paidOnlinePct,0) + " paid vs " + fmtPct(freePct,0) + " free), broken down further into online/advance vs POS. A rising paid share means events are converting more attendees into paying customers rather than giving tickets away.\n\n" + spreadLine(paidSpread, function(v){return fmtPct(v,0);})
+        };
+      })(),
       { label:"Top 5 Rev. Concentration", value: fmtPct(p.revenueConcentrationPct,0),
         tip:"How much of this month's total revenue came from just the top " + top5Count + " events (out of " + n + " total). High concentration means the month leans heavily on a few big events — worth knowing if any of them don't repeat." }
     ];
     row.innerHTML = tiles.map(function(t){
-      return '<div class="glance-tile tt-point" data-tt="'+escapeHtml(t.tip)+'"><div class="glance-label">'+t.label+'</div><div class="glance-value">'+t.value+'</div></div>';
+      return '<div class="glance-tile tt-point" data-tt="'+escapeHtml(t.tip)+'"><div class="glance-label">'+t.label+'</div><div class="glance-value">'+t.value+'</div>'+(t.extra||"")+'</div>';
     }).join("");
   }
 
