@@ -1906,6 +1906,33 @@
   }
 
   // ---------- Chart builders (pure inline SVG / CSS, no external libs) ----------
+
+  // We only have Free/Paid/POS ticket detail for whichever single month has an
+  // Events tab (state.eventsMonthKey) — the Months sheet itself only stores
+  // Tickets + GTV per month, with no channel breakdown, and revenue has no
+  // per-channel split at all. So ticket bars can be broken into composition
+  // for that one month; every other month, and revenue bars everywhere, stay
+  // a single solid color rather than imply detail we don't actually have.
+  function getMonthTicketComposition(row){
+    if(!row || !state.eventsMonthKey || row.key !== state.eventsMonthKey) return null;
+    if(!state.events || state.events.length === 0) return null;
+    var portfolio = computeEventPortfolio(state.events);
+    var total = portfolio.totals.tickets;
+    if(total <= 0) return null;
+    return {
+      free: portfolio.totals.free,
+      paidOnline: Math.max(0, portfolio.totals.paid - portfolio.totals.pos),
+      pos: portfolio.totals.pos,
+      total: total
+    };
+  }
+  var TICKET_COMPOSITION_SEGMENTS = [
+    { key:"free", label:"Free", color:"var(--gray-300)" },
+    { key:"paidOnline", label:"Online/advance", color:"#1d4ed8" },
+    { key:"pos", label:"POS", color:"#f59e0b" }
+  ];
+  var TICKET_COMPOSITION_NOTE = "Ticket bar shown as Free / Online / POS composition for the latest month only — earlier months predate per-event tracking. Revenue stays one color since we don't have revenue broken down by channel.";
+
   function buildGroupedBarChartSVG(rows, keyA, keyB, colorA, colorB){
     var w = 620, h = 210, padL = 8, padR = 8, padT = 12, padB = 26;
     var innerW = w - padL - padR, innerH = h - padT - padB;
@@ -1915,19 +1942,39 @@
     var maxA = Math.max.apply(null, rows.map(function(r){ return r[keyA]; })) || 1;
     var maxB = Math.max.apply(null, rows.map(function(r){ return r[keyB]; })) || 1;
     var bars = "";
+    var anySegmented = false;
     rows.forEach(function(r,i){
       var gx = padL + i*groupW;
       var hA = (r[keyA]/maxA) * innerH;
       var hB = (r[keyB]/maxB) * innerH;
       var xA = gx + groupW/2 - barW - 2;
       var xB = gx + groupW/2 + 2;
-      var ttA = r.label + " — Tickets: " + fmtInt(r[keyA]);
+      var yA = padT+innerH-hA;
+
+      var comp = (keyA === "tickets") ? getMonthTicketComposition(r) : null;
+      if(comp){
+        anySegmented = true;
+        var yCursor = yA + hA;
+        TICKET_COMPOSITION_SEGMENTS.forEach(function(seg){
+          var segVal = comp[seg.key];
+          var segH = comp.total > 0 ? (segVal/comp.total) * hA : 0;
+          if(segH <= 0) return;
+          yCursor -= segH;
+          var segPct = comp.total > 0 ? (segVal/comp.total*100) : 0;
+          var segTt = r.label + " — " + seg.label + " tickets: " + fmtInt(segVal) + " (" + segPct.toFixed(0) + "% of " + fmtInt(r[keyA]) + " total)";
+          bars += '<rect class="tt-point" data-tt="'+segTt+'" x="'+xA+'" y="'+yCursor+'" width="'+barW+'" height="'+Math.max(1,segH)+'" fill="'+seg.color+'" style="cursor:pointer;"></rect>';
+        });
+      } else {
+        var ttA = r.label + " — Tickets: " + fmtInt(r[keyA]);
+        bars += '<rect class="tt-point" data-tt="'+ttA+'" x="'+xA+'" y="'+yA+'" width="'+barW+'" height="'+Math.max(1,hA)+'" rx="2" fill="'+colorA+'" style="cursor:pointer;"></rect>';
+      }
+
       var ttB = r.label + " — Revenue: " + fmtCurrencyFull(r[keyB]);
-      bars += '<rect class="tt-point" data-tt="'+ttA+'" x="'+xA+'" y="'+(padT+innerH-hA)+'" width="'+barW+'" height="'+Math.max(1,hA)+'" rx="2" fill="'+colorA+'" style="cursor:pointer;"></rect>';
       bars += '<rect class="tt-point" data-tt="'+ttB+'" x="'+xB+'" y="'+(padT+innerH-hB)+'" width="'+barW+'" height="'+Math.max(1,hB)+'" rx="2" fill="'+colorB+'" style="cursor:pointer;"></rect>';
       bars += '<text x="'+(gx+groupW/2)+'" y="'+(h-8)+'" font-size="9" fill="#64748b" text-anchor="middle">'+shortMonthLabel(r.key)+'</text>';
     });
-    return '<svg viewBox="0 0 '+w+' '+h+'" style="width:100%;height:auto;display:block;">'+bars+'</svg>';
+    var note = anySegmented ? '<div style="font-size:9.5px;color:var(--gray-500);margin-top:4px;">'+TICKET_COMPOSITION_NOTE+'</div>' : "";
+    return '<svg viewBox="0 0 '+w+' '+h+'" style="width:100%;height:auto;display:block;">'+bars+'</svg>' + note;
   }
 
   function buildGrowthChartSVG(rows){
@@ -1969,18 +2016,45 @@
     var barW = Math.max(4, Math.min(22, groupW - 8));
     var maxVal = Math.max.apply(null, rows.map(function(r){ return r[key]; }).concat([target])) || 1;
     var bars = "";
+    var anySegmented = false;
     rows.forEach(function(r,i){
       var gx = padL + i*groupW + (groupW-barW)/2;
       var hV = (r[key]/maxVal) * innerH;
+      var yTop = padT+innerH-hV;
       var pctOfTarget = target > 0 ? (r[key]/target*100) : null;
-      var tt = r.label + " — " + fmtFn(r[key]) + " (Target: " + fmtFn(target) + (pctOfTarget!==null ? ", " + fmtPct(pctOfTarget) : "") + ")";
-      bars += '<rect class="tt-point" data-tt="'+tt+'" x="'+gx+'" y="'+(padT+innerH-hV)+'" width="'+barW+'" height="'+Math.max(1,hV)+'" rx="2" fill="'+color+'" opacity="0.85" style="cursor:pointer;"></rect>';
+      var vsTargetNote = " · Month total " + fmtFn(r[key]) + " vs Target " + fmtFn(target) + (pctOfTarget!==null ? " (" + fmtPct(pctOfTarget) + ")" : "");
+
+      var comp = (key === "tickets") ? getMonthTicketComposition(r) : null;
+      if(comp){
+        anySegmented = true;
+        var yCursor = yTop + hV;
+        TICKET_COMPOSITION_SEGMENTS.forEach(function(seg){
+          var segVal = comp[seg.key];
+          var segH = comp.total > 0 ? (segVal/comp.total) * hV : 0;
+          if(segH <= 0) return;
+          yCursor -= segH;
+          var segPct = comp.total > 0 ? (segVal/comp.total*100) : 0;
+          var segTt = r.label + " — " + seg.label + ": " + fmtInt(segVal) + " (" + segPct.toFixed(0) + "% of tickets)" + vsTargetNote;
+          bars += '<rect class="tt-point" data-tt="'+segTt+'" x="'+gx+'" y="'+yCursor+'" width="'+barW+'" height="'+Math.max(1,segH)+'" fill="'+seg.color+'" style="cursor:pointer;"></rect>';
+        });
+      } else {
+        var tt = r.label + " — " + fmtFn(r[key]) + " (Target: " + fmtFn(target) + (pctOfTarget!==null ? ", " + fmtPct(pctOfTarget) : "") + ")";
+        bars += '<rect class="tt-point" data-tt="'+tt+'" x="'+gx+'" y="'+yTop+'" width="'+barW+'" height="'+Math.max(1,hV)+'" rx="2" fill="'+color+'" opacity="0.85" style="cursor:pointer;"></rect>';
+      }
       bars += '<text x="'+(gx+barW/2)+'" y="'+(h-8)+'" font-size="8.5" fill="#64748b" text-anchor="middle">'+shortMonthLabel(r.key)+'</text>';
     });
     var targetY = padT + innerH - (target/maxVal)*innerH;
     var targetLine = '<line x1="'+padL+'" y1="'+targetY+'" x2="'+(w-padR)+'" y2="'+targetY+'" stroke="#b91c1c" stroke-width="1.4" stroke-dasharray="4,3"></line>' +
       '<text x="'+(w-padR)+'" y="'+(targetY-4)+'" font-size="8.5" fill="#b91c1c" text-anchor="end">Target</text>';
-    return '<svg viewBox="0 0 '+w+' '+h+'" style="width:100%;height:auto;display:block;">'+bars+targetLine+'</svg>';
+    var legend = anySegmented
+      ? '<div class="chart-legend" style="margin-top:4px;">' +
+          '<span><span class="dot" style="background:var(--gray-300);"></span>Free</span>' +
+          '<span><span class="dot" style="background:#1d4ed8;"></span>Online</span>' +
+          '<span><span class="dot" style="background:#f59e0b;"></span>POS</span>' +
+        '</div>' +
+        '<div style="font-size:9px;color:var(--gray-500);margin-top:2px;">Composition shown for the latest month only — earlier months predate per-event tracking.</div>'
+      : "";
+    return '<svg viewBox="0 0 '+w+' '+h+'" style="width:100%;height:auto;display:block;">'+bars+targetLine+'</svg>' + legend;
   }
 
   function buildMultiLineChartSVG(rows, series, opts){
