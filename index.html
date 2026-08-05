@@ -871,17 +871,17 @@
   }
 
   /* ---------- SORTABLE / SEARCHABLE / FILTERABLE TABLE HEADERS ---------- */
+  /* Column titles stay plain text. Hovering a header reveals a small ☰ button;
+     clicking it opens one combined menu (sort / search / filter) for that column. */
   th.th-sortable{
-    vertical-align:top;
-    padding:5px 8px 6px;
+    vertical-align:middle;
+    padding:7px 8px;
   }
   .th-row{
     display:flex;
     align-items:center;
-    justify-content:space-between;
-    gap:4px;
-    cursor:pointer;
-    user-select:none;
+    justify-content:flex-end;
+    gap:5px;
   }
   .th-label{
     white-space:nowrap;
@@ -893,53 +893,39 @@
     margin-left:1px;
   }
   th.sorted-asc .th-label, th.sorted-desc .th-label{ color:var(--blue); }
-  .th-filter-btn{
+  .th-menu-btn{
     border:none;
     background:none;
-    color:var(--gray-300);
-    font-size:10px;
+    color:var(--gray-500);
+    font-size:12px;
+    line-height:1;
     cursor:pointer;
-    padding:1px 3px;
-    border-radius:4px;
+    padding:3px 4px;
+    border-radius:5px;
     flex-shrink:0;
     position:relative;
+    opacity:0;
+    transition:opacity .12s, background .12s, color .12s;
   }
-  .th-filter-btn:hover{ background:var(--gray-100); color:var(--gray-700); }
-  .th-filter-btn.active{ color:var(--blue); }
-  .filter-count{
+  th.th-sortable:hover .th-menu-btn,
+  .th-menu-btn.has-state,
+  .th-menu-btn.menu-open{
+    opacity:1;
+  }
+  .th-menu-btn:hover{ background:var(--gray-100); color:var(--gray-900); }
+  .th-menu-btn.has-state{ color:var(--blue); }
+  .th-menu-dot{
     position:absolute;
-    top:-4px;
-    right:-4px;
-    background:var(--blue);
-    color:#fff;
-    font-size:8px;
-    font-weight:800;
+    top:1px;
+    right:0px;
+    width:6px;
+    height:6px;
     border-radius:50%;
-    width:12px;
-    height:12px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    line-height:1;
+    background:var(--blue);
+    border:1.5px solid #fff;
   }
-  .th-search-input{
-    width:100%;
-    margin-top:4px;
-    border:1px solid var(--gray-100);
-    border-radius:5px;
-    padding:3px 6px;
-    font-size:10.5px;
-    font-weight:500;
-    font-family:inherit;
-    text-transform:none;
-    letter-spacing:0;
-    color:var(--gray-900);
-    background:var(--gray-50);
-  }
-  .th-search-input:focus{ outline:none; border-color:var(--blue); background:#fff; }
-  .th-search-input::placeholder{ color:var(--gray-300); }
 
-  .filter-dropdown{
+  .col-menu{
     display:none;
     position:fixed;
     z-index:1100;
@@ -947,22 +933,55 @@
     border:1px solid var(--gray-100);
     border-radius:10px;
     box-shadow:0 12px 28px rgba(15,23,42,0.18);
-    width:200px;
+    width:210px;
     padding:8px;
   }
-  .filter-dropdown.open{ display:block; }
-  .filter-dropdown-search{
+  .col-menu.open{ display:block; }
+  .col-menu-section{ padding:4px 2px 8px; }
+  .col-menu-label{
+    display:block;
+    font-size:9.5px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:.3px;
+    color:var(--gray-500);
+    margin-bottom:5px;
+  }
+  .col-menu-divider{
+    height:1px;
+    background:var(--gray-100);
+    margin:2px 0;
+  }
+  .col-menu-sort-btn{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    width:100%;
+    text-align:left;
+    border:none;
+    background:none;
+    border-radius:6px;
+    padding:6px 7px;
+    font-size:12px;
+    font-weight:600;
+    color:var(--gray-700);
+    cursor:pointer;
+    margin-bottom:1px;
+  }
+  .col-menu-sort-btn:hover{ background:var(--gray-50); }
+  .col-menu-sort-btn.active{ background:var(--blue-light); color:var(--blue); }
+  .col-menu-search-input, .filter-dropdown-search{
     width:100%;
     border:1px solid var(--gray-300);
     border-radius:6px;
     padding:5px 7px;
     font-size:11.5px;
     font-family:inherit;
-    margin-bottom:6px;
   }
-  .filter-dropdown-search:focus{ outline:none; border-color:var(--blue); }
+  .col-menu-search-input:focus, .filter-dropdown-search:focus{ outline:none; border-color:var(--blue); }
+  .filter-dropdown-search{ margin-bottom:6px; }
   .filter-dropdown-list{
-    max-height:170px;
+    max-height:150px;
     overflow-y:auto;
     display:flex;
     flex-direction:column;
@@ -996,8 +1015,6 @@
     justify-content:space-between;
     gap:6px;
     margin-top:7px;
-    padding-top:7px;
-    border-top:1px solid var(--gray-100);
   }
   .filter-dropdown-actions button{
     border:1px solid var(--gray-300);
@@ -1009,7 +1026,16 @@
     color:var(--gray-700);
     cursor:pointer;
   }
-  .filter-dropdown-actions button.primary{ background:var(--blue); border-color:var(--blue); color:#fff; margin-left:auto; }
+  .col-menu-actions{
+    display:flex;
+    justify-content:flex-end;
+    margin-top:7px;
+    padding-top:7px;
+    border-top:1px solid var(--gray-100);
+  }
+  .col-menu-actions button.primary, .filter-dropdown-actions button.primary{
+    background:var(--blue); border-color:var(--blue); color:#fff;
+  }
 
   /* ---------- RESPONSIVE ---------- */
   @media (max-width:1150px){
@@ -1250,13 +1276,34 @@
 <!-- Shared hover tooltip for all chart data points ([data-tt] elements) -->
 <div class="chart-tooltip" id="chartTooltip"></div>
 
-<!-- Shared filter dropdown for all sortable/filterable table headers -->
-<div class="filter-dropdown" id="filterDropdown">
-  <input type="text" class="filter-dropdown-search" id="filterDropdownSearch" placeholder="Search values…">
-  <div class="filter-dropdown-list" id="filterDropdownList"></div>
-  <div class="filter-dropdown-actions">
-    <button type="button" id="filterSelectAllBtn">Select all</button>
-    <button type="button" id="filterClearBtn">Clear</button>
+<!-- Shared per-column menu (sort + search + filter) for all sortable table headers.
+     Opened by clicking the ☰ button that appears when hovering a header. -->
+<div class="col-menu" id="colMenu">
+  <div class="col-menu-section" style="padding-bottom:6px;">
+    <button type="button" class="col-menu-sort-btn" id="colMenuSortAscBtn">↑ Sort ascending</button>
+    <button type="button" class="col-menu-sort-btn" id="colMenuSortDescBtn">↓ Sort descending</button>
+    <button type="button" class="col-menu-sort-btn" id="colMenuClearSortBtn">✕ Clear sort</button>
+    <label class="filter-option" style="margin-top:3px;">
+      <input type="checkbox" id="colMenuAdvancedToggle">
+      <span>Add as secondary sort (advanced)</span>
+    </label>
+  </div>
+  <div class="col-menu-divider"></div>
+  <div class="col-menu-section">
+    <label class="col-menu-label">Search this column</label>
+    <input type="text" class="col-menu-search-input" id="colMenuSearchInput" placeholder="Type to find one value…">
+  </div>
+  <div class="col-menu-divider"></div>
+  <div class="col-menu-section" style="padding-bottom:0;">
+    <label class="col-menu-label">Filter (pick any number)</label>
+    <input type="text" class="filter-dropdown-search" id="filterDropdownSearch" placeholder="Find in list…">
+    <div class="filter-dropdown-list" id="filterDropdownList"></div>
+    <div class="filter-dropdown-actions">
+      <button type="button" id="filterSelectAllBtn">Select all</button>
+      <button type="button" id="filterClearBtn">Clear</button>
+    </div>
+  </div>
+  <div class="col-menu-actions">
     <button type="button" id="filterDoneBtn" class="primary">Done</button>
   </div>
 </div>
@@ -2737,7 +2784,7 @@
     monthly: { sort: [], search: {}, filter: {} },
     events: { sort: [], search: {}, filter: {} }
   };
-  var openFilterPanel = null; // { table, col, allValues }
+  var openColMenu = null; // { table, col, allValues }
 
   var MONTHLY_COLUMNS = [
     { key:"label", label:"Month", get:function(r){ return r.label; } },
@@ -2824,22 +2871,26 @@
     });
     return out;
   }
+  // Column titles are plain text; hovering a header reveals a ☰ button (always
+  // visible instead if that column already has a sort/search/filter applied,
+  // so state stays discoverable without needing to hover first). Clicking it
+  // opens the single shared #colMenu panel with sort/search/filter for that column.
   function buildTableHeadHTML(tableKey, columns, ui){
     var cells = columns.map(function(col){
       var sIdx = -1, dir = null;
       for(var i=0;i<ui.sort.length;i++){ if(ui.sort[i].key===col.key){ sIdx=i; dir=ui.sort[i].dir; break; } }
       var arrow = dir === "asc" ? " ▲" : (dir === "desc" ? " ▼" : "");
       var badge = sIdx > 0 ? ('<sup class="th-sort-badge">'+(sIdx+1)+'</sup>') : "";
-      var searchVal = ui.search[col.key] || "";
-      var activeCount = (ui.filter[col.key] || []).length;
+      var hasSearch = !!ui.search[col.key];
+      var hasFilter = (ui.filter[col.key] || []).length > 0;
+      var hasState = !!dir || hasSearch || hasFilter;
       var ttAttr = col.tt ? (' data-tt="'+escapeHtml(col.tt)+'"') : "";
       var thClass = "th-sortable" + (dir ? (" sorted-"+dir) : "");
       return '<th class="'+thClass+'"'+ttAttr+'>' +
           '<div class="th-row">' +
-            '<span class="th-label" data-sort-col="'+col.key+'" data-sort-table="'+tableKey+'" title="Click to sort — shift-click to add as a secondary sort">'+col.label+arrow+badge+'</span>' +
-            '<button type="button" class="th-filter-btn'+(activeCount?" active":"")+'" data-filter-col="'+col.key+'" data-filter-table="'+tableKey+'" title="Filter '+escapeHtml(col.label)+'">▾'+(activeCount?('<span class="filter-count">'+activeCount+'</span>'):"")+'</button>' +
+            '<span class="th-label">'+col.label+arrow+badge+'</span>' +
+            '<button type="button" class="th-menu-btn'+(hasState?" has-state":"")+'" data-menu-col="'+col.key+'" data-menu-table="'+tableKey+'" title="Sort, search, or filter '+escapeHtml(col.label)+'">☰'+(hasState?'<span class="th-menu-dot"></span>':"")+'</button>' +
           '</div>' +
-          '<input type="text" class="th-search-input" placeholder="Search…" value="'+escapeHtml(searchVal)+'" data-search-col="'+col.key+'" data-search-table="'+tableKey+'">' +
         '</th>';
     }).join("");
     return "<tr>" + cells + "</tr>";
@@ -3185,6 +3236,9 @@
   }
 
   // ---------- Table header sort/search/filter wiring ----------
+  // Hovering a header reveals its ☰ button; clicking it opens the single
+  // shared #colMenu panel, positioned next to that button, with sort/search/
+  // filter controls scoped to that one column (tracked via openColMenu).
   function findAncestorWithAttr(node, attr){
     while(node && node !== document){
       if(node.getAttribute && node.getAttribute(attr) !== null) return node;
@@ -3193,42 +3247,51 @@
     return null;
   }
 
-  function toggleSort(tableKey, colKey, isAdvanced){
+  // Sets (not toggles/cycles) this column's sort direction, since the menu has
+  // explicit "Sort ascending"/"Sort descending" buttons rather than one label
+  // to click repeatedly. isAdvanced (the "secondary sort" checkbox in the menu)
+  // adds this column as an extra tie-breaker instead of replacing the sort.
+  function setColumnSort(tableKey, colKey, dir, isAdvanced){
     var ui = tableUI[tableKey];
     var idx = -1;
     for(var i=0;i<ui.sort.length;i++){ if(ui.sort[i].key===colKey){ idx=i; break; } }
 
-    if(!isAdvanced){
-      // Simple sort: this column becomes the only sort key, cycling asc -> desc -> off.
-      if(ui.sort.length === 1 && idx === 0){
-        if(ui.sort[0].dir === "asc") ui.sort[0].dir = "desc";
-        else ui.sort = [];
-      } else {
-        ui.sort = [{ key: colKey, dir: "asc" }];
-      }
+    if(dir === "clear"){
+      if(idx !== -1) ui.sort.splice(idx, 1);
+    } else if(!isAdvanced){
+      ui.sort = [{ key: colKey, dir: dir }];
+    } else if(idx === -1){
+      ui.sort.push({ key: colKey, dir: dir });
     } else {
-      // Advanced (shift-click): add/cycle this column as an extra tie-breaker,
-      // keeping any earlier sort keys at higher priority.
-      if(idx === -1) ui.sort.push({ key: colKey, dir: "asc" });
-      else if(ui.sort[idx].dir === "asc") ui.sort[idx].dir = "desc";
-      else ui.sort.splice(idx, 1);
+      ui.sort[idx].dir = dir;
     }
     rerenderTableByKey(tableKey);
   }
 
-  function closeFilterDropdown(){
-    var dd = document.getElementById("filterDropdown");
-    dd.classList.remove("open");
-    openFilterPanel = null;
+  function updateColMenuSortButtons(){
+    if(!openColMenu) return;
+    var ui = tableUI[openColMenu.table];
+    var current = null;
+    for(var i=0;i<ui.sort.length;i++){ if(ui.sort[i].key===openColMenu.col){ current = ui.sort[i].dir; break; } }
+    document.getElementById("colMenuSortAscBtn").classList.toggle("active", current==="asc");
+    document.getElementById("colMenuSortDescBtn").classList.toggle("active", current==="desc");
+  }
+
+  function closeColMenu(){
+    var menu = document.getElementById("colMenu");
+    menu.classList.remove("open");
+    var openBtns = document.querySelectorAll(".th-menu-btn.menu-open");
+    for(var i=0;i<openBtns.length;i++) openBtns[i].classList.remove("menu-open");
+    openColMenu = null;
   }
 
   function renderFilterOptionList(){
-    if(!openFilterPanel) return;
+    if(!openColMenu) return;
     var listEl = document.getElementById("filterDropdownList");
     var query = (document.getElementById("filterDropdownSearch").value || "").toLowerCase();
-    var ui = tableUI[openFilterPanel.table];
-    var selected = ui.filter[openFilterPanel.col] || [];
-    var values = openFilterPanel.allValues.filter(function(v){ return v.toLowerCase().indexOf(query) !== -1; });
+    var ui = tableUI[openColMenu.table];
+    var selected = ui.filter[openColMenu.col] || [];
+    var values = openColMenu.allValues.filter(function(v){ return v.toLowerCase().indexOf(query) !== -1; });
     if(values.length === 0){
       listEl.innerHTML = '<div class="filter-dropdown-empty">No matching values.</div>';
       return;
@@ -3239,7 +3302,7 @@
     }).join("");
   }
 
-  function openFilterDropdownFor(tableKey, colKey, anchorEl){
+  function openColMenuFor(tableKey, colKey, anchorEl){
     var columns = getColumnsForTable(tableKey);
     var cm = colMap(columns);
     var col = cm[colKey];
@@ -3258,60 +3321,64 @@
       });
     }
 
-    openFilterPanel = { table: tableKey, col: colKey, allValues: distinctColumnValues(baseRows, col) };
+    openColMenu = { table: tableKey, col: colKey, allValues: distinctColumnValues(baseRows, col) };
 
-    var dd = document.getElementById("filterDropdown");
-    dd.classList.add("open");
+    var menu = document.getElementById("colMenu");
+    menu.classList.add("open");
+    document.getElementById("colMenuSearchInput").value = tableUI[tableKey].search[colKey] || "";
+    document.getElementById("colMenuAdvancedToggle").checked = false;
     document.getElementById("filterDropdownSearch").value = "";
+    updateColMenuSortButtons();
     renderFilterOptionList();
 
     var rect = anchorEl.getBoundingClientRect();
     var vw = window.innerWidth || 1200, vh = window.innerHeight || 800;
-    var left = Math.min(rect.left, vw - 216);
+    var left = Math.max(6, Math.min(rect.left - 170, vw - 226));
     var top = rect.bottom + 6;
-    if(top + 260 > vh) top = Math.max(6, rect.top - 266);
-    dd.style.left = left + "px";
-    dd.style.top = top + "px";
+    if(top + 380 > vh) top = Math.max(6, rect.top - 386);
+    menu.style.left = left + "px";
+    menu.style.top = top + "px";
+
+    var prevOpen = document.querySelectorAll(".th-menu-btn.menu-open");
+    for(var i=0;i<prevOpen.length;i++) prevOpen[i].classList.remove("menu-open");
+    anchorEl.classList.add("menu-open");
   }
 
   function initTableControls(){
     document.addEventListener("click", function(e){
-      var sortLabel = findAncestorWithAttr(e.target, "data-sort-col");
-      if(sortLabel){
-        toggleSort(sortLabel.getAttribute("data-sort-table"), sortLabel.getAttribute("data-sort-col"), e.shiftKey);
-        return;
-      }
-      var filterBtn = findAncestorWithAttr(e.target, "data-filter-col");
-      if(filterBtn){
+      var menuBtn = findAncestorWithAttr(e.target, "data-menu-col");
+      if(menuBtn){
         e.stopPropagation();
-        var t = filterBtn.getAttribute("data-filter-table"), c = filterBtn.getAttribute("data-filter-col");
-        if(openFilterPanel && openFilterPanel.table === t && openFilterPanel.col === c){
-          closeFilterDropdown();
+        var t = menuBtn.getAttribute("data-menu-table"), c = menuBtn.getAttribute("data-menu-col");
+        if(openColMenu && openColMenu.table === t && openColMenu.col === c){
+          closeColMenu();
         } else {
-          openFilterDropdownFor(t, c, filterBtn);
+          openColMenuFor(t, c, menuBtn);
         }
         return;
       }
-      var dd = document.getElementById("filterDropdown");
-      if(openFilterPanel && !dd.contains(e.target)){
-        closeFilterDropdown();
+      if(openColMenu){
+        var advanced = document.getElementById("colMenuAdvancedToggle").checked;
+        if(e.target.id === "colMenuSortAscBtn"){ setColumnSort(openColMenu.table, openColMenu.col, "asc", advanced); updateColMenuSortButtons(); return; }
+        if(e.target.id === "colMenuSortDescBtn"){ setColumnSort(openColMenu.table, openColMenu.col, "desc", advanced); updateColMenuSortButtons(); return; }
+        if(e.target.id === "colMenuClearSortBtn"){ setColumnSort(openColMenu.table, openColMenu.col, "clear", false); updateColMenuSortButtons(); return; }
+      }
+      var menu = document.getElementById("colMenu");
+      if(openColMenu && !menu.contains(e.target)){
+        closeColMenu();
       }
     });
 
     document.addEventListener("input", function(e){
-      if(e.target && e.target.classList && e.target.classList.contains("th-search-input")){
-        var tableKey = e.target.getAttribute("data-search-table");
-        var colKey = e.target.getAttribute("data-search-col");
-        tableUI[tableKey].search[colKey] = e.target.value;
+      if(e.target && e.target.id === "colMenuSearchInput" && openColMenu){
+        tableUI[openColMenu.table].search[openColMenu.col] = e.target.value;
         var selStart = e.target.selectionStart, selEnd = e.target.selectionEnd;
-        rerenderTableByKey(tableKey);
-        // The table body/head gets fully rebuilt, which would otherwise steal focus
-        // away from the box the user is actively typing in — put it right back.
-        var again = document.querySelector('.th-search-input[data-search-table="'+tableKey+'"][data-search-col="'+colKey+'"]');
-        if(again){
-          again.focus();
-          try{ again.setSelectionRange(selStart, selEnd); }catch(err){}
-        }
+        rerenderTableByKey(openColMenu.table);
+        // The table gets fully rebuilt, but this input lives in the menu panel
+        // (untouched by that rebuild) so it never actually loses focus — this
+        // is just a defensive re-sync in case that ever changes.
+        var again = document.getElementById("colMenuSearchInput");
+        if(again){ again.focus(); try{ again.setSelectionRange(selStart, selEnd); }catch(err){} }
         return;
       }
       if(e.target && e.target.id === "filterDropdownSearch"){
@@ -3321,32 +3388,32 @@
 
     document.addEventListener("change", function(e){
       if(e.target && e.target.classList && e.target.classList.contains("filter-option-checkbox")){
-        if(!openFilterPanel) return;
-        var ui = tableUI[openFilterPanel.table];
-        var arr = ui.filter[openFilterPanel.col] || [];
+        if(!openColMenu) return;
+        var ui = tableUI[openColMenu.table];
+        var arr = ui.filter[openColMenu.col] || [];
         var val = e.target.value;
         var pos = arr.indexOf(val);
         if(e.target.checked){ if(pos === -1) arr.push(val); }
         else { if(pos !== -1) arr.splice(pos, 1); }
-        ui.filter[openFilterPanel.col] = arr;
-        rerenderTableByKey(openFilterPanel.table);
+        ui.filter[openColMenu.col] = arr;
+        rerenderTableByKey(openColMenu.table);
       }
     });
 
     document.getElementById("filterSelectAllBtn").addEventListener("click", function(){
-      if(!openFilterPanel) return;
-      tableUI[openFilterPanel.table].filter[openFilterPanel.col] = openFilterPanel.allValues.slice();
+      if(!openColMenu) return;
+      tableUI[openColMenu.table].filter[openColMenu.col] = openColMenu.allValues.slice();
       renderFilterOptionList();
-      rerenderTableByKey(openFilterPanel.table);
+      rerenderTableByKey(openColMenu.table);
     });
     document.getElementById("filterClearBtn").addEventListener("click", function(){
-      if(!openFilterPanel) return;
-      tableUI[openFilterPanel.table].filter[openFilterPanel.col] = [];
+      if(!openColMenu) return;
+      tableUI[openColMenu.table].filter[openColMenu.col] = [];
       renderFilterOptionList();
-      rerenderTableByKey(openFilterPanel.table);
+      rerenderTableByKey(openColMenu.table);
     });
     document.getElementById("filterDoneBtn").addEventListener("click", function(){
-      closeFilterDropdown();
+      closeColMenu();
     });
   }
 
