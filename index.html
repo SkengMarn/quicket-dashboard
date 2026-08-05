@@ -870,6 +870,147 @@
     white-space:pre-line;
   }
 
+  /* ---------- SORTABLE / SEARCHABLE / FILTERABLE TABLE HEADERS ---------- */
+  th.th-sortable{
+    vertical-align:top;
+    padding:5px 8px 6px;
+  }
+  .th-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:4px;
+    cursor:pointer;
+    user-select:none;
+  }
+  .th-label{
+    white-space:nowrap;
+  }
+  .th-sort-badge{
+    font-size:8px;
+    font-weight:800;
+    color:var(--blue);
+    margin-left:1px;
+  }
+  th.sorted-asc .th-label, th.sorted-desc .th-label{ color:var(--blue); }
+  .th-filter-btn{
+    border:none;
+    background:none;
+    color:var(--gray-300);
+    font-size:10px;
+    cursor:pointer;
+    padding:1px 3px;
+    border-radius:4px;
+    flex-shrink:0;
+    position:relative;
+  }
+  .th-filter-btn:hover{ background:var(--gray-100); color:var(--gray-700); }
+  .th-filter-btn.active{ color:var(--blue); }
+  .filter-count{
+    position:absolute;
+    top:-4px;
+    right:-4px;
+    background:var(--blue);
+    color:#fff;
+    font-size:8px;
+    font-weight:800;
+    border-radius:50%;
+    width:12px;
+    height:12px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    line-height:1;
+  }
+  .th-search-input{
+    width:100%;
+    margin-top:4px;
+    border:1px solid var(--gray-100);
+    border-radius:5px;
+    padding:3px 6px;
+    font-size:10.5px;
+    font-weight:500;
+    font-family:inherit;
+    text-transform:none;
+    letter-spacing:0;
+    color:var(--gray-900);
+    background:var(--gray-50);
+  }
+  .th-search-input:focus{ outline:none; border-color:var(--blue); background:#fff; }
+  .th-search-input::placeholder{ color:var(--gray-300); }
+
+  .filter-dropdown{
+    display:none;
+    position:fixed;
+    z-index:1100;
+    background:#fff;
+    border:1px solid var(--gray-100);
+    border-radius:10px;
+    box-shadow:0 12px 28px rgba(15,23,42,0.18);
+    width:200px;
+    padding:8px;
+  }
+  .filter-dropdown.open{ display:block; }
+  .filter-dropdown-search{
+    width:100%;
+    border:1px solid var(--gray-300);
+    border-radius:6px;
+    padding:5px 7px;
+    font-size:11.5px;
+    font-family:inherit;
+    margin-bottom:6px;
+  }
+  .filter-dropdown-search:focus{ outline:none; border-color:var(--blue); }
+  .filter-dropdown-list{
+    max-height:170px;
+    overflow-y:auto;
+    display:flex;
+    flex-direction:column;
+    gap:1px;
+  }
+  .filter-option{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    font-size:11.5px;
+    color:var(--gray-700);
+    padding:4px 5px;
+    border-radius:5px;
+    cursor:pointer;
+  }
+  .filter-option:hover{ background:var(--gray-50); }
+  .filter-option input{ flex-shrink:0; }
+  .filter-option span{
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .filter-dropdown-empty{
+    font-size:11px;
+    color:var(--gray-500);
+    padding:6px 4px;
+    text-align:center;
+  }
+  .filter-dropdown-actions{
+    display:flex;
+    justify-content:space-between;
+    gap:6px;
+    margin-top:7px;
+    padding-top:7px;
+    border-top:1px solid var(--gray-100);
+  }
+  .filter-dropdown-actions button{
+    border:1px solid var(--gray-300);
+    background:#fff;
+    border-radius:6px;
+    padding:4px 8px;
+    font-size:10.5px;
+    font-weight:700;
+    color:var(--gray-700);
+    cursor:pointer;
+  }
+  .filter-dropdown-actions button.primary{ background:var(--blue); border-color:var(--blue); color:#fff; margin-left:auto; }
+
   /* ---------- RESPONSIVE ---------- */
   @media (max-width:1150px){
     .insight-panel{ grid-column:span 12; }
@@ -1047,18 +1188,7 @@
         <div class="panel-title tt-point" data-tt="Every month you've recorded, most recent first. Ticket Δ and Revenue Δ show the change from the prior month; Target % shows progress against that month's fixed monthly target.">Monthly Performance</div>
         <div class="table-scroll">
           <table>
-            <thead>
-              <tr>
-                <th>Month</th>
-                <th>Tickets</th>
-                <th>Revenue</th>
-                <th>Ticket Δ</th>
-                <th>Revenue Δ</th>
-                <th>Ticket Target %</th>
-                <th>Revenue Target %</th>
-                <th class="tt-point" data-tt="▲ up, ▼ down, ► flat — based on that month's revenue change vs the month before. Anything within ±2% counts as flat.">Trend</th>
-              </tr>
-            </thead>
+            <thead id="monthlyTableHead"></thead>
             <tbody id="tableBody"></tbody>
           </table>
           <div class="empty-note" id="tableEmptyNote" style="display:none;">No monthly data yet. Add rows to the Google Sheet, then click "Refresh Data".</div>
@@ -1119,6 +1249,17 @@
 
 <!-- Shared hover tooltip for all chart data points ([data-tt] elements) -->
 <div class="chart-tooltip" id="chartTooltip"></div>
+
+<!-- Shared filter dropdown for all sortable/filterable table headers -->
+<div class="filter-dropdown" id="filterDropdown">
+  <input type="text" class="filter-dropdown-search" id="filterDropdownSearch" placeholder="Search values…">
+  <div class="filter-dropdown-list" id="filterDropdownList"></div>
+  <div class="filter-dropdown-actions">
+    <button type="button" id="filterSelectAllBtn">Select all</button>
+    <button type="button" id="filterClearBtn">Clear</button>
+    <button type="button" id="filterDoneBtn" class="primary">Done</button>
+  </div>
+</div>
 
 <script>
 (function(){
@@ -1882,44 +2023,72 @@
     };
   }
 
+  // Joins a list of strings into a natural-language phrase: "A", "A and B", "A, B, and C".
+  function joinNaturalList(arr){
+    if(arr.length === 0) return "";
+    if(arr.length === 1) return arr[0];
+    if(arr.length === 2) return arr[0] + " and " + arr[1];
+    return arr.slice(0,-1).join(", ") + ", and " + arr[arr.length-1];
+  }
+
   // Blended 🟢/🟡/🔴 health signal per event: compares each event's AOV, POS
   // adoption, paid-ticket ratio, and revenue-per-ticket against this month's
-  // portfolio average, then averages the four tier scores.
+  // portfolio average, then averages the four tier scores. Each metric is
+  // explicitly tagged strong/typical/weak so the tooltip can say *why* an
+  // event landed where it did, not just show the raw numbers.
   function eventHealth(e, portfolio){
-    function tier(val, avg){
-      if(avg <= 0) return 1;
+    function tierOf(val, avg){
+      if(avg <= 0) return { tier:1, word:"typical", reason:"no comparable average yet" };
       var ratio = val/avg;
-      if(ratio >= 1.1) return 2;
-      if(ratio >= 0.7) return 1;
-      return 0;
+      var pct = (ratio-1)*100;
+      var reason = Math.abs(pct) < 5 ? "about even with" : (fmtSignedPct(pct) + " vs");
+      if(ratio >= 1.1) return { tier:2, word:"strong", reason:reason };
+      if(ratio >= 0.7) return { tier:1, word:"typical", reason:reason };
+      return { tier:0, word:"weak", reason:reason };
     }
-    function vsAvgWord(val, avg){
-      if(avg <= 0) return "no comparable average yet";
-      var pct = (val-avg)/avg*100;
-      if(Math.abs(pct) < 5) return "about even with";
-      return fmtSignedPct(pct) + " vs";
-    }
+
     var eAov = e.orders > 0 ? e.revenue/e.orders : 0;
     var ePos = e.paid > 0 ? e.pos/e.paid*100 : 0;
     var ePaidRatio = e.tickets > 0 ? e.paid/e.tickets*100 : 0;
     var eRevPerTicket = e.tickets > 0 ? e.revenue/e.tickets : 0;
 
-    var score = (
-      tier(eAov, portfolio.aov) +
-      tier(ePos, portfolio.posAdoptionPct) +
-      tier(ePaidRatio, portfolio.paidRatioPct) +
-      tier(eRevPerTicket, portfolio.avgTicketPrice)
-    ) / 4;
+    var metrics = [
+      { name:"Order Value", val:eAov, avg:portfolio.aov, fmt:fmtCurrencyFull },
+      { name:"POS Adoption", val:ePos, avg:portfolio.posAdoptionPct, fmt:function(v){ return fmtPct(v,0); } },
+      { name:"Paid Ratio", val:ePaidRatio, avg:portfolio.paidRatioPct, fmt:function(v){ return fmtPct(v,0); } },
+      { name:"Revenue/Ticket", val:eRevPerTicket, avg:portfolio.avgTicketPrice, fmt:fmtCurrencyFull }
+    ];
+    metrics.forEach(function(m){
+      var t = tierOf(m.val, m.avg);
+      m.tier = t.tier; m.word = t.word; m.reason = t.reason;
+    });
 
+    var score = metrics.reduce(function(s,m){ return s+m.tier; }, 0) / 4;
     var result = score >= 1.5 ? { icon:"🟢", label:"Excellent" }
       : score >= 0.75 ? { icon:"🟡", label:"Good" }
       : { icon:"🔴", label:"Needs Attention" };
+    result.score = score;
 
-    result.explain = result.icon + " " + result.label + " for " + escapeHtml(e.name) + "\n" +
-      "Order Value: " + fmtCurrencyFull(eAov) + " (" + vsAvgWord(eAov, portfolio.aov) + " the " + fmtCurrencyFull(portfolio.aov) + " average)\n" +
-      "POS Adoption: " + fmtPct(ePos,0) + " (" + vsAvgWord(ePos, portfolio.posAdoptionPct) + " the " + fmtPct(portfolio.posAdoptionPct,0) + " average)\n" +
-      "Paid Ratio: " + fmtPct(ePaidRatio,0) + " (" + vsAvgWord(ePaidRatio, portfolio.paidRatioPct) + " the " + fmtPct(portfolio.paidRatioPct,0) + " average)\n" +
-      "Revenue/Ticket: " + fmtCurrencyFull(eRevPerTicket) + " (" + vsAvgWord(eRevPerTicket, portfolio.avgTicketPrice) + " the " + fmtCurrencyFull(portfolio.avgTicketPrice) + " average)";
+    var strongOnes = metrics.filter(function(m){ return m.word === "strong"; }).map(function(m){ return m.name; });
+    var weakOnes = metrics.filter(function(m){ return m.word === "weak"; }).map(function(m){ return m.name; });
+
+    var why;
+    if(result.label === "Excellent"){
+      why = "Running strong on " + joinNaturalList(strongOnes) + (weakOnes.length ? ", with no major weak spots dragging it down." : ".");
+    } else if(result.label === "Good"){
+      why = (strongOnes.length ? "Strong on " + joinNaturalList(strongOnes) : "No standout strengths yet") +
+        (weakOnes.length ? ", but soft on " + joinNaturalList(weakOnes) + " — worth watching." : ", and nothing majorly weak either.");
+    } else {
+      why = weakOnes.length
+        ? "Weak on " + joinNaturalList(weakOnes) + " — well below this month's average, which is what's pulling the score down."
+        : "No single metric stands out enough to lift it out of the lowest tier.";
+    }
+
+    result.explain = result.icon + " " + result.label + " for " + escapeHtml(e.name) + " — " + why + "\n\n" +
+      metrics.map(function(m){
+        return m.name + ": " + m.fmt(m.val) + " — " + m.word + " (" + m.reason + " the " + m.fmt(m.avg) + " average)";
+      }).join("\n") + "\n\n" +
+      "How this is scored: each metric is strong (≥10% above average, worth 2), typical (within 30% below to 10% above, worth 1), or weak (more than 30% below, worth 0). Average the four scores: ≥1.5 is 🟢 Excellent, ≥0.75 is 🟡 Good, below that is 🔴 Needs Attention. Free or promotional events will naturally score lower — this isn't a judgment on the event itself.";
     return result;
   }
 
@@ -1941,30 +2110,54 @@
     '</div>';
   }
 
-  // Full sortable-by-revenue table of every event recorded for the month.
+  var EVENTS_COLUMNS = [
+    { key:"name", label:"Event", get:function(r){ return r.name; } },
+    { key:"tickets", label:"Tickets", get:function(r){ return r.tickets; }, fmt:fmtInt },
+    { key:"free", label:"Free", get:function(r){ return r.free; }, fmt:fmtInt },
+    { key:"paid", label:"Paid", get:function(r){ return r.paid; }, fmt:fmtInt },
+    { key:"orders", label:"Orders", get:function(r){ return r.orders; }, fmt:fmtInt },
+    { key:"faceValue", label:"Face Value", get:function(r){ return r.faceValue; }, fmt:fmtCurrencyFull },
+    { key:"revenue", label:"Revenue", get:function(r){ return r.revenue; }, fmt:fmtCurrencyFull },
+    { key:"pctRev", label:"% Rev", get:function(r){ return r.pctRev; }, fmt:function(v){ return v.toFixed(1)+"%"; } },
+    { key:"healthScore", label:"Health", get:function(r){ return r.health.score; },
+      fmt:function(v,r){ return r.health.icon+" "+r.health.label; },
+      tt:"A blended 🟢/🟡/🔴 read on this event vs this month's portfolio average across Average Order Value, POS adoption, paid-ticket ratio, and revenue per ticket. Hover a row's icon for the full breakdown of why. Filter by rating using ▾. Not a judgment on the event itself — free or promotional events will naturally score lower here." }
+  ];
+
+  // Full sortable/searchable/filterable table of every event recorded for the month.
   function buildEventsTableHTML(events, portfolio){
-    var sorted = events.slice().sort(function(a,b){ return b.revenue-a.revenue; });
-    var totalRevenue = sorted.reduce(function(s,e){ return s+e.revenue; }, 0) || 1;
-    var rowsHtml = sorted.map(function(e){
-      var pct = (e.revenue/totalRevenue*100).toFixed(1);
-      var health = eventHealth(e, portfolio);
+    var enriched = events.map(function(e){
+      return {
+        name: e.name, tickets: e.tickets, free: e.free, paid: e.paid, orders: e.orders,
+        faceValue: e.faceValue, revenue: e.revenue, health: eventHealth(e, portfolio)
+      };
+    });
+    var totalRevenue = enriched.reduce(function(s,r){ return s+r.revenue; }, 0) || 1;
+    enriched.forEach(function(r){ r.pctRev = r.revenue/totalRevenue*100; });
+
+    var ui = tableUI.events;
+    var filtered = applyTableFilter(enriched, ui.filter, EVENTS_COLUMNS);
+    filtered = applyTableSearch(filtered, ui.search, EVENTS_COLUMNS);
+    var sorted = ui.sort.length
+      ? applyTableSort(filtered, ui.sort, EVENTS_COLUMNS)
+      : filtered.slice().sort(function(a,b){ return b.revenue-a.revenue; });
+
+    var rowsHtml = sorted.length ? sorted.map(function(r){
       return '<tr>' +
-        '<td>'+escapeHtml(e.name)+'</td>' +
-        '<td>'+fmtInt(e.tickets)+'</td>' +
-        '<td>'+fmtInt(e.free)+'</td>' +
-        '<td>'+fmtInt(e.paid)+'</td>' +
-        '<td>'+fmtInt(e.orders)+'</td>' +
-        '<td>'+fmtCurrencyFull(e.faceValue)+'</td>' +
-        '<td>'+fmtCurrencyFull(e.revenue)+'</td>' +
-        '<td>'+pct+'%</td>' +
-        '<td class="tt-point" data-tt="'+health.explain+'" style="cursor:pointer;">'+health.icon+'</td>' +
+        '<td>'+escapeHtml(r.name)+'</td>' +
+        '<td>'+fmtInt(r.tickets)+'</td>' +
+        '<td>'+fmtInt(r.free)+'</td>' +
+        '<td>'+fmtInt(r.paid)+'</td>' +
+        '<td>'+fmtInt(r.orders)+'</td>' +
+        '<td>'+fmtCurrencyFull(r.faceValue)+'</td>' +
+        '<td>'+fmtCurrencyFull(r.revenue)+'</td>' +
+        '<td>'+r.pctRev.toFixed(1)+'%</td>' +
+        '<td class="tt-point" data-tt="'+r.health.explain+'" style="cursor:pointer;">'+r.health.icon+'</td>' +
       '</tr>';
-    }).join("");
-    return '<div class="table-scroll" style="max-height:260px;">' +
-      '<table><thead><tr>' +
-        '<th>Event</th><th>Tickets</th><th>Free</th><th>Paid</th><th>Orders</th><th>Face Value</th><th>Revenue</th><th>% Rev</th>' +
-        '<th class="tt-point" data-tt="A blended 🟢/🟡/🔴 read on this event vs this month\'s portfolio average across Average Order Value, POS adoption, paid-ticket ratio, and revenue per ticket. Not a judgment on the event itself — free or promotional events will naturally score lower here.">Health</th>' +
-      '</tr></thead><tbody>' + rowsHtml + '</tbody></table>' +
+    }).join("") : '<tr><td colspan="9" class="empty-note">No events match your search/filter — clear one above to see more.</td></tr>';
+
+    return '<div class="table-scroll" id="eventsTableContainer" style="max-height:260px;">' +
+      '<table><thead>' + buildTableHeadHTML("events", EVENTS_COLUMNS, ui) + '</thead><tbody>' + rowsHtml + '</tbody></table>' +
     '</div>';
   }
 
@@ -2528,41 +2721,189 @@
         : "Running " + fmtPct(Math.abs(gtvPaceDelta)) + " behind the pace needed at this point in the year — worth checking whether it's price or volume driving the gap.");
   }
 
+  // ---------- Sortable / searchable / filterable table headers ----------
+  // Shared across the Monthly Performance table and the Events table.
+  // Sort: click a header label = sort by that column only (cycles asc -> desc
+  // -> off); shift-click adds it as an extra tie-breaker without losing the
+  // existing sort ("advanced" multi-column sort), numbered 2, 3, ... in order.
+  // Search: the box under each header is a single free-text query — narrows
+  // to rows whose value in that column contains what you typed. Good for
+  // finding one specific thing (e.g. type an event name to jump to it).
+  // Filter: the ▾ button opens a checklist of every distinct value in that
+  // column — check as many as you want, and rows matching ANY checked value
+  // are kept. Different from search: filter can keep multiple results at once
+  // from a fixed list, search narrows freely to whatever text you type.
+  var tableUI = {
+    monthly: { sort: [], search: {}, filter: {} },
+    events: { sort: [], search: {}, filter: {} }
+  };
+  var openFilterPanel = null; // { table, col, allValues }
+
+  var MONTHLY_COLUMNS = [
+    { key:"label", label:"Month", get:function(r){ return r.label; } },
+    { key:"tickets", label:"Tickets", get:function(r){ return r.tickets; }, fmt:fmtInt },
+    { key:"gtv", label:"Revenue", get:function(r){ return r.gtv; }, fmt:fmtCurrencyFull },
+    { key:"ticketsDelta", label:"Ticket Δ", get:function(r){ return r.ticketsDelta; },
+      fmt:function(v){ return (v===null||v===undefined) ? "—" : fmtSignedInt(v); } },
+    { key:"gtvDelta", label:"Revenue Δ", get:function(r){ return r.gtvDelta; },
+      fmt:function(v){ return (v===null||v===undefined) ? "—" : ("UGX "+fmtSignedInt(v)); } },
+    { key:"ticketsVsTarget", label:"Ticket Target %", get:function(r){ return r.ticketsVsTarget; },
+      fmt:function(v){ return (v===null||v===undefined) ? "—" : fmtPct(v); } },
+    { key:"gtvVsTarget", label:"Revenue Target %", get:function(r){ return r.gtvVsTarget; },
+      fmt:function(v){ return (v===null||v===undefined) ? "—" : fmtPct(v); } },
+    { key:"trend", label:"Trend",
+      get:function(r){ return r.trend.cls==="up" ? 2 : (r.trend.cls==="down" ? 0 : 1); },
+      fmt:function(v){ return v===2 ? "▲ Up" : (v===0 ? "▼ Down" : "► Flat"); },
+      tt:"▲ up, ▼ down, ► flat — based on that month's revenue change vs the month before. Anything within ±2% counts as flat." }
+  ];
+
+  function colMap(columns){
+    var m = {};
+    columns.forEach(function(c){ m[c.key] = c; });
+    return m;
+  }
+  function displayText(col, row){
+    var raw = col.get(row);
+    if(col.fmt) return String(col.fmt(raw, row));
+    return (raw === null || raw === undefined) ? "—" : String(raw);
+  }
+  function cmpRaw(av, bv){
+    var aNull = av === null || av === undefined || (typeof av === "number" && isNaN(av));
+    var bNull = bv === null || bv === undefined || (typeof bv === "number" && isNaN(bv));
+    if(aNull && bNull) return 0;
+    if(aNull) return 1;
+    if(bNull) return -1;
+    if(typeof av === "number" && typeof bv === "number") return av - bv;
+    return String(av).localeCompare(String(bv));
+  }
+  function applyTableSort(rows, sortSpec, columns){
+    if(!sortSpec.length) return rows;
+    var cm = colMap(columns);
+    var arr = rows.slice();
+    arr.sort(function(a,b){
+      for(var i=0;i<sortSpec.length;i++){
+        var s = sortSpec[i], col = cm[s.key];
+        if(!col) continue;
+        var cmp = cmpRaw(col.get(a), col.get(b));
+        if(s.dir === "desc") cmp = -cmp;
+        if(cmp !== 0) return cmp;
+      }
+      return 0;
+    });
+    return arr;
+  }
+  function applyTableSearch(rows, searchSpec, columns){
+    var cm = colMap(columns);
+    var keys = Object.keys(searchSpec).filter(function(k){ return searchSpec[k]; });
+    if(!keys.length) return rows;
+    return rows.filter(function(row){
+      return keys.every(function(k){
+        var col = cm[k];
+        if(!col) return true;
+        return displayText(col,row).toLowerCase().indexOf(searchSpec[k].toLowerCase()) !== -1;
+      });
+    });
+  }
+  function applyTableFilter(rows, filterSpec, columns){
+    var cm = colMap(columns);
+    var keys = Object.keys(filterSpec).filter(function(k){ return filterSpec[k] && filterSpec[k].length; });
+    if(!keys.length) return rows;
+    return rows.filter(function(row){
+      return keys.every(function(k){
+        var col = cm[k];
+        if(!col) return true;
+        return filterSpec[k].indexOf(displayText(col,row)) !== -1;
+      });
+    });
+  }
+  function distinctColumnValues(rows, col){
+    var seen = {}, out = [];
+    rows.forEach(function(row){
+      var text = displayText(col, row);
+      if(!seen[text]){ seen[text] = true; out.push(text); }
+    });
+    return out;
+  }
+  function buildTableHeadHTML(tableKey, columns, ui){
+    var cells = columns.map(function(col){
+      var sIdx = -1, dir = null;
+      for(var i=0;i<ui.sort.length;i++){ if(ui.sort[i].key===col.key){ sIdx=i; dir=ui.sort[i].dir; break; } }
+      var arrow = dir === "asc" ? " ▲" : (dir === "desc" ? " ▼" : "");
+      var badge = sIdx > 0 ? ('<sup class="th-sort-badge">'+(sIdx+1)+'</sup>') : "";
+      var searchVal = ui.search[col.key] || "";
+      var activeCount = (ui.filter[col.key] || []).length;
+      var ttAttr = col.tt ? (' data-tt="'+escapeHtml(col.tt)+'"') : "";
+      var thClass = "th-sortable" + (dir ? (" sorted-"+dir) : "");
+      return '<th class="'+thClass+'"'+ttAttr+'>' +
+          '<div class="th-row">' +
+            '<span class="th-label" data-sort-col="'+col.key+'" data-sort-table="'+tableKey+'" title="Click to sort — shift-click to add as a secondary sort">'+col.label+arrow+badge+'</span>' +
+            '<button type="button" class="th-filter-btn'+(activeCount?" active":"")+'" data-filter-col="'+col.key+'" data-filter-table="'+tableKey+'" title="Filter '+escapeHtml(col.label)+'">▾'+(activeCount?('<span class="filter-count">'+activeCount+'</span>'):"")+'</button>' +
+          '</div>' +
+          '<input type="text" class="th-search-input" placeholder="Search…" value="'+escapeHtml(searchVal)+'" data-search-col="'+col.key+'" data-search-table="'+tableKey+'">' +
+        '</th>';
+    }).join("");
+    return "<tr>" + cells + "</tr>";
+  }
+
   function renderTable(rows){
+    var theadEl = document.getElementById("monthlyTableHead");
     var tbody = document.getElementById("tableBody");
     var emptyNote = document.getElementById("tableEmptyNote");
-    tbody.innerHTML = "";
+    var ui = tableUI.monthly;
+
+    theadEl.innerHTML = buildTableHeadHTML("monthly", MONTHLY_COLUMNS, ui);
 
     if(rows.length === 0){
+      tbody.innerHTML = "";
+      emptyNote.textContent = 'No monthly data yet. Add rows to the Google Sheet, then click "Refresh Data".';
+      emptyNote.style.display = "block";
+      return;
+    }
+
+    var reversed = rows.slice().reverse();
+    var filtered = applyTableFilter(reversed, ui.filter, MONTHLY_COLUMNS);
+    filtered = applyTableSearch(filtered, ui.search, MONTHLY_COLUMNS);
+    filtered = applyTableSort(filtered, ui.sort, MONTHLY_COLUMNS);
+
+    if(filtered.length === 0){
+      tbody.innerHTML = "";
+      emptyNote.textContent = "No rows match your search/filter — clear one above to see more.";
       emptyNote.style.display = "block";
       return;
     }
     emptyNote.style.display = "none";
 
-    var reversed = rows.slice().reverse();
+    tbody.innerHTML = filtered.map(function(r){
+      var tdCls = r.ticketsDelta>0?"up":(r.ticketsDelta<0?"down":"flat");
+      var gdCls = r.gtvDelta>0?"up":(r.gtvDelta<0?"down":"flat");
+      return '<tr class="row-'+r.trend.cls+'">' +
+        '<td>'+escapeHtml(r.label)+'</td>' +
+        '<td>'+fmtInt(r.tickets)+'</td>' +
+        '<td>'+fmtCurrencyFull(r.gtv)+'</td>' +
+        '<td class="'+tdCls+'">'+(r.ticketsDelta===null?"—":fmtSignedInt(r.ticketsDelta))+'</td>' +
+        '<td class="'+gdCls+'">'+(r.gtvDelta===null?"—":"UGX "+fmtSignedInt(r.gtvDelta))+'</td>' +
+        '<td>'+(r.ticketsVsTarget===null?"—":fmtPct(r.ticketsVsTarget))+'</td>' +
+        '<td>'+(r.gtvVsTarget===null?"—":fmtPct(r.gtvVsTarget))+'</td>' +
+        '<td class="'+r.trend.cls+'">'+r.trend.sym+'</td>' +
+      '</tr>';
+    }).join("");
+  }
 
-    reversed.forEach(function(r){
-      var tr = document.createElement("tr");
-      tr.className = "row-" + r.trend.cls;
-
-      function cell(text, cls){
-        var td = document.createElement("td");
-        td.textContent = text;
-        if(cls) td.className = cls;
-        return td;
-      }
-
-      tr.appendChild(cell(r.label));
-      tr.appendChild(cell(fmtInt(r.tickets)));
-      tr.appendChild(cell(fmtCurrencyFull(r.gtv)));
-      tr.appendChild(cell(r.ticketsDelta===null?"—":fmtSignedInt(r.ticketsDelta), r.ticketsDelta>0?"up":(r.ticketsDelta<0?"down":"flat")));
-      tr.appendChild(cell(r.gtvDelta===null?"—":"UGX "+fmtSignedInt(r.gtvDelta), r.gtvDelta>0?"up":(r.gtvDelta<0?"down":"flat")));
-      tr.appendChild(cell(r.ticketsVsTarget===null?"—":fmtPct(r.ticketsVsTarget)));
-      tr.appendChild(cell(r.gtvVsTarget===null?"—":fmtPct(r.gtvVsTarget)));
-      tr.appendChild(cell(r.trend.sym, r.trend.cls));
-
-      tbody.appendChild(tr);
-    });
+  function rerenderMonthlyTable(){
+    renderTable(computeRows());
+  }
+  function rerenderEventsTable(){
+    var container = document.getElementById("eventsTableContainer");
+    if(!container) return;
+    var portfolio = computeEventPortfolio(state.events || []);
+    container.outerHTML = buildEventsTableHTML(state.events || [], portfolio);
+  }
+  function getColumnsForTable(tableKey){
+    return tableKey === "monthly" ? MONTHLY_COLUMNS : EVENTS_COLUMNS;
+  }
+  function rerenderTableByKey(tableKey){
+    if(tableKey === "monthly") rerenderMonthlyTable();
+    else rerenderEventsTable();
   }
 
   // ---------- Top Events (main view) ----------
@@ -2807,16 +3148,22 @@
 
     function findTarget(node){
       while(node && node !== document){
-        if(node.getAttribute && node.getAttribute("data-tt") !== null) return node;
+        if(node.getAttribute && (node.getAttribute("data-tt") !== null || node.getAttribute("data-tt-base") !== null)) return node;
         node = node.parentNode;
       }
       return null;
     }
 
+    // Falls back to the static data-tt-base definition if the dynamic data-tt
+    // hasn't been set yet (e.g. before the first successful data load, or if a
+    // render call for that section hasn't run). This is what makes hover work
+    // immediately on a fresh page load instead of only after data arrives.
     document.addEventListener("mouseover", function(e){
       var target = findTarget(e.target);
       if(!target) return;
-      tip.textContent = target.getAttribute("data-tt");
+      var text = target.getAttribute("data-tt");
+      if(text === null || text === "") text = target.getAttribute("data-tt-base");
+      tip.textContent = text;
       tip.style.display = "block";
     });
 
@@ -2837,9 +3184,176 @@
     });
   }
 
+  // ---------- Table header sort/search/filter wiring ----------
+  function findAncestorWithAttr(node, attr){
+    while(node && node !== document){
+      if(node.getAttribute && node.getAttribute(attr) !== null) return node;
+      node = node.parentNode;
+    }
+    return null;
+  }
+
+  function toggleSort(tableKey, colKey, isAdvanced){
+    var ui = tableUI[tableKey];
+    var idx = -1;
+    for(var i=0;i<ui.sort.length;i++){ if(ui.sort[i].key===colKey){ idx=i; break; } }
+
+    if(!isAdvanced){
+      // Simple sort: this column becomes the only sort key, cycling asc -> desc -> off.
+      if(ui.sort.length === 1 && idx === 0){
+        if(ui.sort[0].dir === "asc") ui.sort[0].dir = "desc";
+        else ui.sort = [];
+      } else {
+        ui.sort = [{ key: colKey, dir: "asc" }];
+      }
+    } else {
+      // Advanced (shift-click): add/cycle this column as an extra tie-breaker,
+      // keeping any earlier sort keys at higher priority.
+      if(idx === -1) ui.sort.push({ key: colKey, dir: "asc" });
+      else if(ui.sort[idx].dir === "asc") ui.sort[idx].dir = "desc";
+      else ui.sort.splice(idx, 1);
+    }
+    rerenderTableByKey(tableKey);
+  }
+
+  function closeFilterDropdown(){
+    var dd = document.getElementById("filterDropdown");
+    dd.classList.remove("open");
+    openFilterPanel = null;
+  }
+
+  function renderFilterOptionList(){
+    if(!openFilterPanel) return;
+    var listEl = document.getElementById("filterDropdownList");
+    var query = (document.getElementById("filterDropdownSearch").value || "").toLowerCase();
+    var ui = tableUI[openFilterPanel.table];
+    var selected = ui.filter[openFilterPanel.col] || [];
+    var values = openFilterPanel.allValues.filter(function(v){ return v.toLowerCase().indexOf(query) !== -1; });
+    if(values.length === 0){
+      listEl.innerHTML = '<div class="filter-dropdown-empty">No matching values.</div>';
+      return;
+    }
+    listEl.innerHTML = values.map(function(v){
+      var checked = selected.indexOf(v) !== -1 ? " checked" : "";
+      return '<label class="filter-option"><input type="checkbox" class="filter-option-checkbox" value="'+escapeHtml(v)+'"'+checked+'><span title="'+escapeHtml(v)+'">'+escapeHtml(v)+'</span></label>';
+    }).join("");
+  }
+
+  function openFilterDropdownFor(tableKey, colKey, anchorEl){
+    var columns = getColumnsForTable(tableKey);
+    var cm = colMap(columns);
+    var col = cm[colKey];
+    if(!col) return;
+
+    // Base the option list on the full unfiltered dataset for that table, so every
+    // possible value stays pickable even after other filters/search narrow the rows.
+    var baseRows;
+    if(tableKey === "monthly"){
+      baseRows = computeRows().slice().reverse();
+    } else {
+      var portfolio = computeEventPortfolio(state.events || []);
+      baseRows = (state.events || []).map(function(e){
+        return { name:e.name, tickets:e.tickets, free:e.free, paid:e.paid, orders:e.orders,
+          faceValue:e.faceValue, revenue:e.revenue, health: eventHealth(e, portfolio) };
+      });
+    }
+
+    openFilterPanel = { table: tableKey, col: colKey, allValues: distinctColumnValues(baseRows, col) };
+
+    var dd = document.getElementById("filterDropdown");
+    dd.classList.add("open");
+    document.getElementById("filterDropdownSearch").value = "";
+    renderFilterOptionList();
+
+    var rect = anchorEl.getBoundingClientRect();
+    var vw = window.innerWidth || 1200, vh = window.innerHeight || 800;
+    var left = Math.min(rect.left, vw - 216);
+    var top = rect.bottom + 6;
+    if(top + 260 > vh) top = Math.max(6, rect.top - 266);
+    dd.style.left = left + "px";
+    dd.style.top = top + "px";
+  }
+
+  function initTableControls(){
+    document.addEventListener("click", function(e){
+      var sortLabel = findAncestorWithAttr(e.target, "data-sort-col");
+      if(sortLabel){
+        toggleSort(sortLabel.getAttribute("data-sort-table"), sortLabel.getAttribute("data-sort-col"), e.shiftKey);
+        return;
+      }
+      var filterBtn = findAncestorWithAttr(e.target, "data-filter-col");
+      if(filterBtn){
+        e.stopPropagation();
+        var t = filterBtn.getAttribute("data-filter-table"), c = filterBtn.getAttribute("data-filter-col");
+        if(openFilterPanel && openFilterPanel.table === t && openFilterPanel.col === c){
+          closeFilterDropdown();
+        } else {
+          openFilterDropdownFor(t, c, filterBtn);
+        }
+        return;
+      }
+      var dd = document.getElementById("filterDropdown");
+      if(openFilterPanel && !dd.contains(e.target)){
+        closeFilterDropdown();
+      }
+    });
+
+    document.addEventListener("input", function(e){
+      if(e.target && e.target.classList && e.target.classList.contains("th-search-input")){
+        var tableKey = e.target.getAttribute("data-search-table");
+        var colKey = e.target.getAttribute("data-search-col");
+        tableUI[tableKey].search[colKey] = e.target.value;
+        var selStart = e.target.selectionStart, selEnd = e.target.selectionEnd;
+        rerenderTableByKey(tableKey);
+        // The table body/head gets fully rebuilt, which would otherwise steal focus
+        // away from the box the user is actively typing in — put it right back.
+        var again = document.querySelector('.th-search-input[data-search-table="'+tableKey+'"][data-search-col="'+colKey+'"]');
+        if(again){
+          again.focus();
+          try{ again.setSelectionRange(selStart, selEnd); }catch(err){}
+        }
+        return;
+      }
+      if(e.target && e.target.id === "filterDropdownSearch"){
+        renderFilterOptionList();
+      }
+    });
+
+    document.addEventListener("change", function(e){
+      if(e.target && e.target.classList && e.target.classList.contains("filter-option-checkbox")){
+        if(!openFilterPanel) return;
+        var ui = tableUI[openFilterPanel.table];
+        var arr = ui.filter[openFilterPanel.col] || [];
+        var val = e.target.value;
+        var pos = arr.indexOf(val);
+        if(e.target.checked){ if(pos === -1) arr.push(val); }
+        else { if(pos !== -1) arr.splice(pos, 1); }
+        ui.filter[openFilterPanel.col] = arr;
+        rerenderTableByKey(openFilterPanel.table);
+      }
+    });
+
+    document.getElementById("filterSelectAllBtn").addEventListener("click", function(){
+      if(!openFilterPanel) return;
+      tableUI[openFilterPanel.table].filter[openFilterPanel.col] = openFilterPanel.allValues.slice();
+      renderFilterOptionList();
+      rerenderTableByKey(openFilterPanel.table);
+    });
+    document.getElementById("filterClearBtn").addEventListener("click", function(){
+      if(!openFilterPanel) return;
+      tableUI[openFilterPanel.table].filter[openFilterPanel.col] = [];
+      renderFilterOptionList();
+      rerenderTableByKey(openFilterPanel.table);
+    });
+    document.getElementById("filterDoneBtn").addEventListener("click", function(){
+      closeFilterDropdown();
+    });
+  }
+
   // ---------- Event wiring ----------
   document.getElementById("refreshDataBtn").addEventListener("click", function(){ loadFromSheet(false); });
   initChartTooltips();
+  initTableControls();
 
   // Quiet text links to the two source Sheets, not buttons — real hrefs so right-click,
   // cmd/ctrl-click, etc. all just work.
