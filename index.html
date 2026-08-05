@@ -933,15 +933,15 @@
         <p class="header-subtitle">Executive performance dashboard</p>
       </div>
       <div class="header-stats">
-        <div class="header-stat">
+        <div class="header-stat tt-point" data-tt="The date range currently covered by the Months sheet — automatically the earliest to latest month you've added. No need to set this manually.">
           <span class="header-stat-label">Reporting Period</span>
           <span class="header-stat-value" id="reportingPeriodValue">—</span>
         </div>
-        <div class="header-stat">
+        <div class="header-stat tt-point" data-tt="The tickets and revenue goals set for the full year. Editable anytime in the Targets sheet — every percentage on this page is measured against these two numbers.">
           <span class="header-stat-label">Annual Target</span>
           <span class="header-stat-value" id="headerAnnualTarget">—</span>
         </div>
-        <div class="header-stat">
+        <div class="header-stat tt-point" data-tt="When this page last successfully pulled data from the Google Sheets. It refreshes automatically every 5 minutes, or click Refresh Data for an instant update.">
           <span class="header-stat-label">Last Refreshed</span>
           <span class="header-stat-value" id="lastUpdatedValue">—</span>
         </div>
@@ -952,46 +952,46 @@
 
     <!-- ROW 2: KPI STRIP -->
     <section class="kpi-strip">
-      <div class="kpi-card">
+      <div class="kpi-card tt-point" id="kpiTicketsCard" data-tt-base="Total tickets sold this month across all events. Your core volume metric — watch it climb month over month to show demand is growing, not just holding steady.">
         <div class="kpi-label">Tickets Sold</div>
         <div class="kpi-value" id="kpiTickets">—</div>
         <div class="kpi-sub" id="kpiTicketsSub">No data yet</div>
         <svg class="kpi-spark" id="kpiTicketsSpark"></svg>
       </div>
-      <div class="kpi-card">
+      <div class="kpi-card tt-point" id="kpiGtvCard" data-tt-base="Total money changing hands through ticket sales this month (Gross Transaction Value). The single best snapshot of business health — rising GTV means more value is flowing through the platform.">
         <div class="kpi-label">Revenue (GTV)</div>
         <div class="kpi-value" id="kpiGtv">—</div>
         <div class="kpi-sub" id="kpiGtvSub">No data yet</div>
         <svg class="kpi-spark" id="kpiGtvSpark"></svg>
       </div>
-      <div class="kpi-card">
+      <div class="kpi-card tt-point" id="kpiTicketAchCard" data-tt-base="Tickets sold this month as a percentage of the monthly ticket target. 100% or above means on pace; below that shows exactly how much ground is left before the month closes out.">
         <div class="kpi-label">Ticket Target Achievement</div>
         <div class="kpi-value" id="kpiTicketAch">—</div>
         <div class="kpi-sub" id="kpiTicketAchSub">No data yet</div>
         <div class="kpi-bar-track"><div class="kpi-bar-fill" id="kpiTicketAchFill" style="width:0%"></div></div>
       </div>
-      <div class="kpi-card">
+      <div class="kpi-card tt-point" id="kpiGtvAchCard" data-tt-base="This month's revenue as a percentage of the monthly revenue target. Above 100% is ahead of plan — below it flags a gap worth understanding before the month ends.">
         <div class="kpi-label">Revenue Target Achievement</div>
         <div class="kpi-value" id="kpiGtvAch">—</div>
         <div class="kpi-sub" id="kpiGtvAchSub">No data yet</div>
         <div class="kpi-bar-track"><div class="kpi-bar-fill" id="kpiGtvAchFill" style="width:0%"></div></div>
       </div>
-      <div class="kpi-card">
+      <div class="kpi-card tt-point" id="kpiTicketGrowthCard" data-tt-base="How much ticket sales changed vs last month. Positive and steady is the goal — a run of negative growth is an early warning worth digging into before it shows up in revenue.">
         <div class="kpi-label">MoM Ticket Growth</div>
         <div class="kpi-value" id="kpiTicketGrowth">—</div>
         <div class="kpi-sub" id="kpiTicketGrowthSub">No data yet</div>
       </div>
-      <div class="kpi-card">
+      <div class="kpi-card tt-point" id="kpiGtvGrowthCard" data-tt-base="How much revenue changed vs last month. Can move differently from ticket growth — if revenue grows faster than tickets, people are spending more per ticket on average.">
         <div class="kpi-label">MoM Revenue Growth</div>
         <div class="kpi-value" id="kpiGtvGrowth">—</div>
         <div class="kpi-sub" id="kpiGtvGrowthSub">No data yet</div>
       </div>
-      <div class="kpi-card">
+      <div class="kpi-card tt-point" id="kpiBestMonthCard" data-tt-base="The single best month on record for revenue. A useful benchmark for what's achievable — worth revisiting what made that month work when planning future events.">
         <div class="kpi-label">Best Performing Month</div>
         <div class="kpi-value" id="kpiBestMonth">—</div>
         <div class="kpi-sub" id="kpiBestMonthSub">No data yet</div>
       </div>
-      <div class="kpi-card">
+      <div class="kpi-card tt-point" id="kpiTrendCard" data-tt-base="A quick read on direction based on this month's revenue vs last month: improving, flat, or declining. Treat it as the headline signal, then dig into the details below to see why.">
         <div class="kpi-label">Current Trend</div>
         <div class="kpi-value" id="kpiTrend">—</div>
         <div class="kpi-sub" id="kpiTrendSub">No data yet</div>
@@ -1001,12 +1001,12 @@
     <!-- ROW 3: INSIGHT + SUMMARY -->
     <section class="row-3">
       <div class="insight-panel">
-        <div class="panel-title">Executive Insight</div>
+        <div class="panel-title tt-point" data-tt="Plain-language observations generated automatically from your monthly data — things like growth streaks, target gaps, and record months. Read this first for the story behind the numbers.">Executive Insight</div>
         <ul class="insight-list" id="insightList"></ul>
       </div>
 
       <div class="summary-col">
-        <div class="summary-card">
+        <div class="summary-card tt-point" id="annualTicketCard" data-tt-base="Cumulative tickets sold so far this year against the annual target. Compare it to how far through the year you are — the later it falls behind pace, the harder it gets to catch up.">
           <div class="summary-head">
             <span class="label">Annual Ticket Progress</span>
             <span class="pct" id="annualTicketPct">0%</span>
@@ -1014,7 +1014,7 @@
           <div class="summary-track"><div class="summary-fill" id="annualTicketFill" style="width:0%"></div></div>
           <div class="summary-figures" id="annualTicketFigures">0 of 0 tickets</div>
         </div>
-        <div class="summary-card">
+        <div class="summary-card tt-point" id="annualGtvCard" data-tt-base="Cumulative revenue so far this year against the annual target. This is the number leadership ultimately cares about — every other stat on this page feeds into it.">
           <div class="summary-head">
             <span class="label">Annual Revenue Progress</span>
             <span class="pct" id="annualGtvPct">0%</span>
@@ -1022,7 +1022,7 @@
           <div class="summary-track"><div class="summary-fill" id="annualGtvFill" style="width:0%"></div></div>
           <div class="summary-figures" id="annualGtvFigures">UGX 0 of UGX 0</div>
         </div>
-        <div class="summary-card">
+        <div class="summary-card tt-point" id="paceTicketCard" data-tt-base="Whether ticket sales are ahead of or behind the pace needed to hit the annual target, given how much of the year has passed. Green means on track; red means the months ahead need to work harder.">
           <div class="summary-head">
             <span class="label">Cumulative Tickets (Pace)</span>
             <span class="pct" id="paceTicketPct">0%</span>
@@ -1030,7 +1030,7 @@
           <div class="summary-track"><div class="summary-fill" id="paceTicketFill" style="width:0%"></div></div>
           <div class="summary-figures" id="paceTicketFigures">—</div>
         </div>
-        <div class="summary-card">
+        <div class="summary-card tt-point" id="paceGtvCard" data-tt-base="Whether revenue is ahead of or behind the pace needed to hit the annual target, given how much of the year has passed. The earliest warning sign for an annual shortfall.">
           <div class="summary-head">
             <span class="label">Cumulative Revenue (Pace)</span>
             <span class="pct" id="paceGtvPct">0%</span>
@@ -1044,7 +1044,7 @@
     <!-- ROW 4: PERFORMANCE TABLE + TOP EVENTS -->
     <section class="row-4">
       <div class="table-section">
-        <div class="panel-title">Monthly Performance</div>
+        <div class="panel-title tt-point" data-tt="Every month you've recorded, most recent first. Ticket Δ and Revenue Δ show the change from the prior month; Target % shows progress against that month's fixed monthly target.">Monthly Performance</div>
         <div class="table-scroll">
           <table>
             <thead>
@@ -1056,7 +1056,7 @@
                 <th>Revenue Δ</th>
                 <th>Ticket Target %</th>
                 <th>Revenue Target %</th>
-                <th>Trend</th>
+                <th class="tt-point" data-tt="▲ up, ▼ down, ► flat — based on that month's revenue change vs the month before. Anything within ±2% counts as flat.">Trend</th>
               </tr>
             </thead>
             <tbody id="tableBody"></tbody>
@@ -1066,7 +1066,7 @@
       </div>
 
       <div class="top-events-panel">
-        <div class="panel-title">Top Events <span class="panel-subtitle" id="topEventsMonthLabel"></span></div>
+        <div class="panel-title tt-point" data-tt="The five highest-revenue events from this month's Events tab, ranked automatically. A quick read on which events are actually driving the numbers above.">Top Events <span class="panel-subtitle" id="topEventsMonthLabel"></span></div>
         <div class="top-events-list" id="topEventsList"></div>
         <div class="empty-note" id="topEventsEmptyNote" style="display:none;">No event data yet for this month. Add an "Events &lt;Mon&gt; &lt;Year&gt;" tab to the Months sheet.</div>
       </div>
@@ -1467,6 +1467,44 @@
     return "red";
   }
 
+  // ---------- Dynamic tooltip comparisons ----------
+  // Turns a static definition (data-tt-base) plus a live figure into a combined
+  // tooltip that also says how this figure stacks up against others of its kind
+  // in the data — its rank, and how far above/below the typical value it sits.
+  function ordinal(n){
+    var s = ["th","st","nd","rd"], v = n % 100;
+    return n + (s[(v-20)%10] || s[v] || s[0]);
+  }
+
+  function setTooltip(el, dynamicText){
+    if(!el) return;
+    var base = el.getAttribute("data-tt-base") || "";
+    el.setAttribute("data-tt", dynamicText ? (base + "\n\n" + dynamicText) : base);
+  }
+
+  // Builds a "This month: X — 2nd highest of 5, 18% above your average" style line.
+  // values should include the current figure. Higher-is-better by default; pass
+  // lowerIsBetter:true for metrics where a smaller number is the stronger one.
+  function buildComparisonLine(current, values, fmtFn, opts){
+    opts = opts || {};
+    var clean = values.filter(function(v){ return v !== null && v !== undefined && !isNaN(v); });
+    var n = clean.length;
+    if(current === null || current === undefined || isNaN(current) || n < 2){
+      return "Add another month of data to see how this compares over time.";
+    }
+    var sorted = clean.slice().sort(function(a,b){ return opts.lowerIsBetter ? a-b : b-a; });
+    var rank = sorted.indexOf(current) + 1;
+    var avg = clean.reduce(function(s,v){ return s+v; }, 0) / n;
+    var diffPct = avg !== 0 ? ((current-avg)/avg*100) : 0;
+    var rankPhrase = rank === 1
+      ? (opts.lowerIsBetter ? "the leanest so far" : "your best on record")
+      : (rank === n ? (opts.lowerIsBetter ? "the highest so far" : "your weakest on record") : ordinal(rank) + " of " + n);
+    var diffPhrase = Math.abs(diffPct) < 1
+      ? "right at your typical level"
+      : (diffPct > 0 ? fmtSignedPct(diffPct) : fmtSignedPct(diffPct)) + " vs your " + n + "-month average of " + fmtFn(avg);
+    return "This figure: " + fmtFn(current) + " — " + rankPhrase + ", " + diffPhrase + ".";
+  }
+
   // ---------- Core calculation engine ----------
   function computeRows(){
     var months = state.months.slice().sort(function(a,b){
@@ -1855,6 +1893,12 @@
       if(ratio >= 0.7) return 1;
       return 0;
     }
+    function vsAvgWord(val, avg){
+      if(avg <= 0) return "no comparable average yet";
+      var pct = (val-avg)/avg*100;
+      if(Math.abs(pct) < 5) return "about even with";
+      return fmtSignedPct(pct) + " vs";
+    }
     var eAov = e.orders > 0 ? e.revenue/e.orders : 0;
     var ePos = e.paid > 0 ? e.pos/e.paid*100 : 0;
     var ePaidRatio = e.tickets > 0 ? e.paid/e.tickets*100 : 0;
@@ -1867,9 +1911,16 @@
       tier(eRevPerTicket, portfolio.avgTicketPrice)
     ) / 4;
 
-    if(score >= 1.5) return { icon:"🟢", label:"Excellent" };
-    if(score >= 0.75) return { icon:"🟡", label:"Good" };
-    return { icon:"🔴", label:"Needs Attention" };
+    var result = score >= 1.5 ? { icon:"🟢", label:"Excellent" }
+      : score >= 0.75 ? { icon:"🟡", label:"Good" }
+      : { icon:"🔴", label:"Needs Attention" };
+
+    result.explain = result.icon + " " + result.label + " for " + escapeHtml(e.name) + "\n" +
+      "Order Value: " + fmtCurrencyFull(eAov) + " (" + vsAvgWord(eAov, portfolio.aov) + " the " + fmtCurrencyFull(portfolio.aov) + " average)\n" +
+      "POS Adoption: " + fmtPct(ePos,0) + " (" + vsAvgWord(ePos, portfolio.posAdoptionPct) + " the " + fmtPct(portfolio.posAdoptionPct,0) + " average)\n" +
+      "Paid Ratio: " + fmtPct(ePaidRatio,0) + " (" + vsAvgWord(ePaidRatio, portfolio.paidRatioPct) + " the " + fmtPct(portfolio.paidRatioPct,0) + " average)\n" +
+      "Revenue/Ticket: " + fmtCurrencyFull(eRevPerTicket) + " (" + vsAvgWord(eRevPerTicket, portfolio.avgTicketPrice) + " the " + fmtCurrencyFull(portfolio.avgTicketPrice) + " average)";
+    return result;
   }
 
   function buildSpotlightGridHTML(portfolio){
@@ -1906,12 +1957,13 @@
         '<td>'+fmtCurrencyFull(e.faceValue)+'</td>' +
         '<td>'+fmtCurrencyFull(e.revenue)+'</td>' +
         '<td>'+pct+'%</td>' +
-        '<td title="'+health.label+'">'+health.icon+'</td>' +
+        '<td class="tt-point" data-tt="'+health.explain+'" style="cursor:pointer;">'+health.icon+'</td>' +
       '</tr>';
     }).join("");
     return '<div class="table-scroll" style="max-height:260px;">' +
       '<table><thead><tr>' +
-        '<th>Event</th><th>Tickets</th><th>Free</th><th>Paid</th><th>Orders</th><th>Face Value</th><th>Revenue</th><th>% Rev</th><th>Health</th>' +
+        '<th>Event</th><th>Tickets</th><th>Free</th><th>Paid</th><th>Orders</th><th>Face Value</th><th>Revenue</th><th>% Rev</th>' +
+        '<th class="tt-point" data-tt="A blended 🟢/🟡/🔴 read on this event vs this month\'s portfolio average across Average Order Value, POS adoption, paid-ticket ratio, and revenue per ticket. Not a judgment on the event itself — free or promotional events will naturally score lower here.">Health</th>' +
       '</tr></thead><tbody>' + rowsHtml + '</tbody></table>' +
     '</div>';
   }
@@ -2135,6 +2187,9 @@
       trendEl.textContent = "—"; trendSub.textContent = "No data yet";
       document.getElementById("kpiTicketsSpark").innerHTML = "";
       document.getElementById("kpiGtvSpark").innerHTML = "";
+      ["kpiTicketsCard","kpiGtvCard","kpiTicketAchCard","kpiGtvAchCard","kpiTicketGrowthCard","kpiGtvGrowthCard","kpiBestMonthCard","kpiTrendCard"].forEach(function(id){
+        setTooltip(document.getElementById(id), null);
+      });
       return;
     }
 
@@ -2222,6 +2277,55 @@
       trendSub.textContent = "Based on revenue vs " + prev.label;
       trendSub.className = "kpi-sub flat";
     }
+
+    // ---------- Dynamic "how does this compare" tooltips ----------
+    setTooltip(document.getElementById("kpiTicketsCard"),
+      buildComparisonLine(latest.tickets, rows.map(function(r){return r.tickets;}), fmtInt));
+
+    setTooltip(document.getElementById("kpiGtvCard"),
+      buildComparisonLine(latest.gtv, rows.map(function(r){return r.gtv;}), fmtCurrencyFull));
+
+    setTooltip(document.getElementById("kpiTicketAchCard"),
+      buildComparisonLine(latest.ticketsVsTarget, rows.map(function(r){return r.ticketsVsTarget;}), fmtPct));
+
+    setTooltip(document.getElementById("kpiGtvAchCard"),
+      buildComparisonLine(latest.gtvVsTarget, rows.map(function(r){return r.gtvVsTarget;}), fmtPct));
+
+    setTooltip(document.getElementById("kpiTicketGrowthCard"),
+      buildComparisonLine(latest.ticketsPct, rows.map(function(r){return r.ticketsPct;}), fmtSignedPct));
+
+    setTooltip(document.getElementById("kpiGtvGrowthCard"),
+      buildComparisonLine(latest.gtvPct, rows.map(function(r){return r.gtvPct;}), fmtSignedPct));
+
+    // Best Performing Month: margin over the runner-up, since "rank" is meaningless when it's always #1
+    (function(){
+      var sortedByGtv = rows.slice().sort(function(a,b){ return b.gtv-a.gtv; });
+      var runnerUp = sortedByGtv.length > 1 ? sortedByGtv[1] : null;
+      var line;
+      if(!runnerUp){
+        line = "Add another month of data to see how this compares.";
+      } else {
+        var marginPct = runnerUp.gtv > 0 ? ((best.gtv-runnerUp.gtv)/runnerUp.gtv*100) : 0;
+        line = best.label + " (" + fmtCurrencyFull(best.gtv) + ") leads " + runnerUp.label + " (" + fmtCurrencyFull(runnerUp.gtv) + "), your runner-up, by " + fmtPct(marginPct) + ".";
+      }
+      setTooltip(document.getElementById("kpiBestMonthCard"), line);
+    })();
+
+    // Current Trend: how long the streak has run, for context on top of the single-month read
+    (function(){
+      var streak = 0, dir = null;
+      for(var i = rows.length-1; i >= 1; i--){
+        var r = rows[i];
+        if(r.gtvPct === null) break;
+        var d = r.gtvPct > 2 ? "up" : (r.gtvPct < -2 ? "down" : "flat");
+        if(dir === null){ dir = d; if(d === "flat") break; streak = 1; }
+        else if(d === dir){ streak++; } else break;
+      }
+      var line = streak >= 2
+        ? "Revenue has moved " + (dir === "up" ? "upward" : "downward") + " for " + streak + " consecutive months — a real trend, not a one-off."
+        : "This is a single-month read — add more months to see if it's the start of a trend or a one-off.";
+      setTooltip(document.getElementById("kpiTrendCard"), line);
+    })();
   }
 
   function renderInsights(rows){
@@ -2373,6 +2477,9 @@
       gtvFiguresEl.textContent = fmtCurrencyFull(0) + " of " + fmtCurrencyFull(state.targets.annualGtv);
       paceTicketPctEl.textContent = "0%"; paceTicketFillEl.style.width = "0%"; paceTicketFiguresEl.textContent = "No data yet";
       paceGtvPctEl.textContent = "0%"; paceGtvFillEl.style.width = "0%"; paceGtvFiguresEl.textContent = "No data yet";
+      ["annualTicketCard","annualGtvCard","paceTicketCard","paceGtvCard"].forEach(function(id){
+        setTooltip(document.getElementById(id), null);
+      });
       return;
     }
 
@@ -2404,6 +2511,21 @@
     paceGtvFillEl.style.width = Math.min(100, gPct) + "%";
     paceGtvFillEl.className = "summary-fill bar-" + (gtvPaceDelta >= 0 ? "green" : "red");
     paceGtvFiguresEl.textContent = fmtCurrencyCompact(latest.cumGtv) + " · " + (gtvPaceDelta >= 0 ? "+" : "") + gtvPaceDelta.toFixed(1) + " pts vs expected pace";
+
+    // ---------- Dynamic "how does this compare" tooltips ----------
+    var monthsIntoYear = monthsElapsed + " of 12 months elapsed (" + fmtPct(expectedPace) + " of the year gone)";
+    setTooltip(document.getElementById("annualTicketCard"),
+      fmtInt(latest.cumTickets) + " tickets banked toward " + fmtInt(state.targets.annualTickets) + " — " + monthsIntoYear + ".");
+    setTooltip(document.getElementById("annualGtvCard"),
+      fmtCurrencyFull(latest.cumGtv) + " banked toward " + fmtCurrencyFull(state.targets.annualGtv) + " — " + monthsIntoYear + ".");
+    setTooltip(document.getElementById("paceTicketCard"),
+      ticketPaceDelta >= 0
+        ? "Running " + fmtPct(Math.abs(ticketPaceDelta)) + " ahead of the pace needed at this point in the year — if this holds, the annual target is reachable."
+        : "Running " + fmtPct(Math.abs(ticketPaceDelta)) + " behind the pace needed at this point in the year — the remaining months need to sell faster than average to catch up.");
+    setTooltip(document.getElementById("paceGtvCard"),
+      gtvPaceDelta >= 0
+        ? "Running " + fmtPct(Math.abs(gtvPaceDelta)) + " ahead of the pace needed at this point in the year — a healthier position than revenue alone suggests."
+        : "Running " + fmtPct(Math.abs(gtvPaceDelta)) + " behind the pace needed at this point in the year — worth checking whether it's price or volume driving the gap.");
   }
 
   function renderTable(rows){
@@ -2459,14 +2581,20 @@
     emptyEl.style.display = "none";
 
     var totalRevenue = state.events.reduce(function(s,e){ return s + e.revenue; }, 0);
+    var portfolio = computeEventPortfolio(state.events);
     var top = state.events.slice().sort(function(a,b){ return b.revenue - a.revenue; }).slice(0,5);
 
     listEl.innerHTML = top.map(function(e,i){
       var pct = totalRevenue > 0 ? (e.revenue/totalRevenue*100) : 0;
+      var eventAov = e.orders > 0 ? e.revenue/e.orders : null;
+      var vsAvgLine = (eventAov !== null && portfolio.aov > 0)
+        ? "Order value " + fmtSignedPct((eventAov-portfolio.aov)/portfolio.aov*100) + " vs this month's average (" + fmtCurrencyFull(portfolio.aov) + ")."
+        : "";
       var tt = escapeHtml(e.name) + "\n" +
         fmtInt(e.tickets) + " tickets (" + fmtInt(e.free) + " free, " + fmtInt(e.paid) + " paid, " + fmtInt(e.pos) + " POS)\n" +
         fmtInt(e.orders) + " orders · Face value " + fmtCurrencyFull(e.faceValue) + "\n" +
-        "Revenue " + fmtCurrencyFull(e.revenue) + " (" + fmtPct(pct,0) + " of month)";
+        "Revenue " + fmtCurrencyFull(e.revenue) + " (" + fmtPct(pct,0) + " of month)" +
+        (vsAvgLine ? "\n" + vsAvgLine : "");
       return '<div class="event-row tt-point" data-tt="'+tt+'" style="cursor:pointer;">' +
         '<div class="event-rank">'+(i+1)+'</div>' +
         '<div class="event-info">' +
@@ -2488,16 +2616,43 @@
     }
     row.style.display = "grid";
     var p = computeEventPortfolio(state.events);
+    var n = state.events.length;
+
+    // Per-event distribution for each metric, so the portfolio average can be
+    // compared against the spread actually seen across this month's events.
+    function spread(getter){
+      var vals = state.events.map(getter).filter(function(v){ return v !== null && !isNaN(v) && isFinite(v); });
+      if(vals.length === 0) return null;
+      return { min: Math.min.apply(null, vals), max: Math.max.apply(null, vals) };
+    }
+    function spreadLine(s, fmtFn){
+      if(!s) return "Not enough order/ticket data across this month's events to show a range.";
+      return "Across this month's " + n + " events, this ranges from " + fmtFn(s.min) + " (lowest) to " + fmtFn(s.max) + " (highest).";
+    }
+
+    var aovSpread = spread(function(e){ return e.orders > 0 ? e.revenue/e.orders : null; });
+    var priceSpread = spread(function(e){ return e.tickets > 0 ? e.revenue/e.tickets : null; });
+    var tpoSpread = spread(function(e){ return e.orders > 0 ? e.tickets/e.orders : null; });
+    var posSpread = spread(function(e){ return e.paid > 0 ? e.pos/e.paid*100 : null; });
+    var paidSpread = spread(function(e){ return e.tickets > 0 ? e.paid/e.tickets*100 : null; });
+    var top5Count = Math.min(5, n);
+
     var tiles = [
-      { label:"Avg Order Value", value: fmtCurrencyFull(p.aov) },
-      { label:"Avg Ticket Price", value: fmtCurrencyFull(p.avgTicketPrice) },
-      { label:"Tickets / Order", value: p.ticketsPerOrder.toFixed(1) },
-      { label:"POS Adoption", value: fmtPct(p.posAdoptionPct,0) },
-      { label:"Paid Ticket Ratio", value: fmtPct(p.paidRatioPct,0) },
-      { label:"Top 5 Rev. Concentration", value: fmtPct(p.revenueConcentrationPct,0) }
+      { label:"Avg Order Value", value: fmtCurrencyFull(p.aov),
+        tip:"Average amount spent per order (Revenue ÷ Orders) across this month's events. Higher usually means people are buying more tickets per transaction, or attending pricier events.\n\n" + spreadLine(aovSpread, fmtCurrencyFull) },
+      { label:"Avg Ticket Price", value: fmtCurrencyFull(p.avgTicketPrice),
+        tip:"Average revenue per ticket sold (Revenue ÷ Tickets). Reflects your event mix — more premium or paid events pull this up, more free or discounted tickets pull it down.\n\n" + spreadLine(priceSpread, fmtCurrencyFull) },
+      { label:"Tickets / Order", value: p.ticketsPerOrder.toFixed(1),
+        tip:"Average number of tickets bought in a single order. Higher numbers suggest group buying — friends or families purchasing together in one transaction.\n\n" + spreadLine(tpoSpread, function(v){return v.toFixed(1);}) },
+      { label:"POS Adoption", value: fmtPct(p.posAdoptionPct,0),
+        tip:"Share of paid tickets sold at point-of-sale (on-site/at the door) rather than online in advance. High POS share can mean strong walk-up demand, but less advance revenue certainty for organizers.\n\n" + spreadLine(posSpread, function(v){return fmtPct(v,0);}) },
+      { label:"Paid Ticket Ratio", value: fmtPct(p.paidRatioPct,0),
+        tip:"Share of all tickets that were paid rather than free. A rising ratio means events are converting more attendees into paying customers rather than giving tickets away.\n\n" + spreadLine(paidSpread, function(v){return fmtPct(v,0);}) },
+      { label:"Top 5 Rev. Concentration", value: fmtPct(p.revenueConcentrationPct,0),
+        tip:"How much of this month's total revenue came from just the top " + top5Count + " events (out of " + n + " total). High concentration means the month leans heavily on a few big events — worth knowing if any of them don't repeat." }
     ];
     row.innerHTML = tiles.map(function(t){
-      return '<div class="glance-tile"><div class="glance-label">'+t.label+'</div><div class="glance-value">'+t.value+'</div></div>';
+      return '<div class="glance-tile tt-point" data-tt="'+escapeHtml(t.tip)+'"><div class="glance-label">'+t.label+'</div><div class="glance-value">'+t.value+'</div></div>';
     }).join("");
   }
 
