@@ -1,0 +1,2083 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quicket Uganda Performance</title>
+<style>
+  :root{
+    --blue:#1d4ed8;
+    --blue-light:#eff4ff;
+    --green:#15803d;
+    --green-light:#eafbf1;
+    --amber:#b45309;
+    --amber-light:#fffbeb;
+    --red:#b91c1c;
+    --red-light:#fdecec;
+    --gray-900:#0f172a;
+    --gray-700:#334155;
+    --gray-500:#64748b;
+    --gray-300:#cbd5e1;
+    --gray-100:#f1f5f9;
+    --gray-50:#f8fafc;
+    --shadow: 0 1px 2px rgba(15,23,42,0.05), 0 1px 8px rgba(15,23,42,0.05);
+    --radius: 14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{ height:100%; }
+  body{
+    margin:0;
+    background:#f6f8fb;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--gray-900);
+    overflow-x:hidden;
+  }
+
+  /* ---------- APP SHELL ---------- */
+  .app-shell{
+    display:flex;
+    min-height:100vh;
+    max-width:1600px;
+    margin:0 auto;
+  }
+
+  /* ---------- SIDEBAR ---------- */
+  .sidebar{
+    width:184px;
+    flex-shrink:0;
+    background:#fff;
+    border-right:1px solid var(--gray-100);
+    padding:18px 14px;
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+  }
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:9px;
+    padding:2px 4px 10px;
+    border-bottom:1px solid var(--gray-100);
+    margin-bottom:2px;
+  }
+  .brand-mark{
+    width:30px;height:30px;
+    border-radius:8px;
+    background:var(--blue);
+    color:#fff;
+    font-weight:800;
+    font-size:14px;
+    display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;
+  }
+  .brand-name{
+    font-size:12.5px;
+    font-weight:700;
+    line-height:1.2;
+    color:var(--gray-900);
+  }
+  .sidebar-actions{
+    display:flex;
+    flex-direction:column;
+    gap:7px;
+  }
+  .side-btn{
+    border:1px solid var(--gray-300);
+    background:#fff;
+    border-radius:9px;
+    padding:8px 10px;
+    font-size:12px;
+    color:var(--gray-700);
+    cursor:pointer;
+    font-weight:600;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    width:100%;
+    text-align:left;
+    transition:background .15s, box-shadow .15s, border-color .15s;
+  }
+  .side-btn:hover{ background:var(--gray-50); box-shadow:var(--shadow); }
+  .side-btn.primary{ background:var(--blue); border-color:var(--blue); color:#fff; }
+  .side-btn.primary:hover{ background:#1740b8; }
+  .side-btn.danger-outline{ color:var(--red); border-color:#f3caca; }
+  .side-btn.danger-outline:hover{ background:var(--red-light); }
+  .sidebar-footer{
+    margin-top:auto;
+    font-size:9.5px;
+    color:var(--gray-500);
+    line-height:1.4;
+    padding-top:10px;
+    border-top:1px solid var(--gray-100);
+  }
+  .sheet-link{
+    display:inline-block;
+    margin-top:6px;
+    font-size:10px;
+    font-weight:600;
+    color:var(--gray-500);
+    text-decoration:none;
+  }
+  .sheet-link:hover{ color:var(--blue); text-decoration:underline; }
+
+  /* ---------- MAIN CONTENT ---------- */
+  .main-content{
+    flex:1;
+    min-width:0;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+    padding:18px 22px 20px;
+    height:100vh;
+    overflow:hidden;
+  }
+
+  /* ---------- ROW 1: HEADER ---------- */
+  .dash-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:12px;
+    flex:0 0 auto;
+  }
+  .dash-header h1{
+    font-size:19px;
+    font-weight:800;
+    margin:0;
+    letter-spacing:-0.2px;
+  }
+  .header-subtitle{
+    margin:2px 0 0;
+    font-size:11.5px;
+    color:var(--gray-500);
+    font-weight:600;
+  }
+  .header-stats{
+    display:flex;
+    gap:22px;
+    align-items:center;
+  }
+  .header-stat{
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+    padding-right:22px;
+    border-right:1px solid var(--gray-100);
+  }
+  .header-stat:last-child{ border-right:none; padding-right:0; }
+  .header-stat-label{
+    font-size:9.5px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.3px;
+    color:var(--gray-500);
+  }
+  .header-stat-value{
+    font-size:12.5px;
+    font-weight:700;
+    color:var(--gray-900);
+  }
+
+  .data-status-banner{
+    flex:0 0 auto;
+    border-radius:10px;
+    padding:8px 14px;
+    font-size:12px;
+    font-weight:600;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .data-status-banner.loading{ background:var(--blue-light); color:var(--blue); }
+  .data-status-banner.error{ background:var(--red-light); color:var(--red); }
+  .data-status-banner.stale{ background:var(--amber-light); color:var(--amber); }
+
+  /* ---------- ROW 2: KPI STRIP ---------- */
+  .kpi-strip{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:12px;
+    flex:0 0 auto;
+  }
+  .kpi-card{
+    background:#fff;
+    border:1px solid var(--gray-100);
+    border-radius:12px;
+    padding:12px 14px;
+    box-shadow:var(--shadow);
+    position:relative;
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+    min-height:92px;
+    overflow:hidden;
+  }
+  .kpi-label{
+    font-size:9.5px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.3px;
+    color:var(--gray-500);
+  }
+  .kpi-value{
+    font-size:21px;
+    font-weight:800;
+    color:var(--gray-900);
+    line-height:1.15;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .kpi-sub{
+    font-size:10.5px;
+    font-weight:600;
+    display:flex;
+    align-items:center;
+    gap:4px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .up{ color:var(--green); }
+  .down{ color:var(--red); }
+  .flat{ color:var(--gray-500); }
+  .amber{ color:var(--amber); }
+  .kpi-dot{ width:7px;height:7px;border-radius:50%;flex-shrink:0; }
+  .dot-up{ background:var(--green); }
+  .dot-down{ background:var(--red); }
+  .dot-flat{ background:var(--gray-300); }
+  .kpi-spark{
+    position:absolute;
+    right:12px;
+    bottom:10px;
+    width:60px;
+    height:24px;
+  }
+  .kpi-bar-track{
+    height:6px;
+    border-radius:4px;
+    background:var(--gray-100);
+    overflow:hidden;
+    margin-top:2px;
+  }
+  .kpi-bar-fill{
+    height:100%;
+    border-radius:4px;
+    transition:width .3s;
+  }
+  .bar-green{ background:var(--green); }
+  .bar-amber{ background:#f59e0b; }
+  .bar-red{ background:var(--red); }
+
+  /* ---------- ROW 3: INSIGHT + SUMMARY ---------- */
+  .row-3{
+    display:grid;
+    grid-template-columns:repeat(12,1fr);
+    gap:14px;
+    flex:1 1 auto;
+    min-height:0;
+  }
+  .panel-title{
+    font-size:11px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:.4px;
+    color:var(--gray-500);
+  }
+  .insight-panel{
+    grid-column:span 8;
+    background:#fff;
+    border:1px solid var(--gray-100);
+    border-radius:var(--radius);
+    padding:16px 18px;
+    box-shadow:var(--shadow);
+    display:flex;
+    flex-direction:column;
+    min-height:0;
+  }
+  .insight-list{
+    list-style:none;
+    margin:10px 0 0;
+    padding:0;
+    display:flex;
+    flex-direction:column;
+    gap:9px;
+    overflow-y:auto;
+    min-height:0;
+  }
+  .insight-list li{
+    display:flex;
+    gap:9px;
+    font-size:12.8px;
+    line-height:1.45;
+    color:var(--gray-700);
+  }
+  .insight-icon{ flex:0 0 auto; }
+  .insight-empty{
+    font-size:12.5px;
+    color:var(--gray-500);
+    margin-top:10px;
+  }
+
+  .summary-col{
+    grid-column:span 4;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    min-height:0;
+  }
+  .summary-card{
+    background:#fff;
+    border:1px solid var(--gray-100);
+    border-radius:12px;
+    padding:11px 15px;
+    box-shadow:var(--shadow);
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    min-height:0;
+  }
+  .summary-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    margin-bottom:5px;
+  }
+  .summary-head .label{
+    font-size:11px;
+    font-weight:700;
+    color:var(--gray-700);
+  }
+  .summary-head .pct{
+    font-size:14px;
+    font-weight:800;
+  }
+  .summary-track{
+    height:7px;
+    border-radius:5px;
+    background:var(--gray-100);
+    overflow:hidden;
+    margin-bottom:5px;
+  }
+  .summary-fill{
+    height:100%;
+    border-radius:5px;
+    transition:width .3s;
+  }
+  .summary-figures{
+    font-size:10.5px;
+    color:var(--gray-500);
+  }
+
+  /* ---------- ROW 4: TABLE ---------- */
+  .table-section{
+    background:#fff;
+    border:1px solid var(--gray-100);
+    border-radius:var(--radius);
+    padding:14px 18px 6px;
+    box-shadow:var(--shadow);
+    flex:1 1 auto;
+    min-height:150px;
+    display:flex;
+    flex-direction:column;
+  }
+  .table-scroll{
+    overflow:auto;
+    flex:1;
+    min-height:0;
+    margin-top:10px;
+  }
+  table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:12.3px;
+  }
+  th,td{
+    padding:7px 10px;
+    text-align:right;
+    white-space:nowrap;
+  }
+  th:first-child, td:first-child{ text-align:left; }
+  thead th{
+    position:sticky;
+    top:0;
+    background:#fff;
+    color:var(--gray-500);
+    font-weight:700;
+    text-transform:uppercase;
+    font-size:10px;
+    letter-spacing:.3px;
+    border-bottom:2px solid var(--gray-100);
+    z-index:1;
+  }
+  tbody tr{ border-bottom:1px solid var(--gray-100); }
+  tbody tr:hover{ background:var(--gray-50); }
+  tr.row-up{ border-left:3px solid var(--green); }
+  tr.row-down{ border-left:3px solid var(--red); }
+  tr.row-flat{ border-left:3px solid var(--gray-300); }
+  td.actions{ text-align:center; }
+  .row-btn{
+    border:none;
+    background:none;
+    cursor:pointer;
+    font-size:12px;
+    color:var(--gray-500);
+    padding:2px 4px;
+  }
+  .row-btn:hover{ color:var(--blue); }
+  .row-btn.del:hover{ color:var(--red); }
+  .empty-note{
+    text-align:center;
+    font-size:12px;
+    color:var(--gray-500);
+    padding:20px 0;
+  }
+
+  /* ---------- COMPARE TABLE (inside modal) ---------- */
+  .compare-table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:12px;
+    margin-top:4px;
+  }
+  .compare-table th, .compare-table td{
+    padding:6px 8px;
+    text-align:right;
+    border-bottom:1px solid var(--gray-100);
+  }
+  .compare-table th:first-child, .compare-table td:first-child{
+    text-align:left;
+    color:var(--gray-500);
+    font-weight:600;
+  }
+  .compare-table thead th{
+    color:var(--gray-500);
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:.3px;
+  }
+
+  /* ---------- MODAL ---------- */
+  .modal-overlay{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(15,23,42,0.45);
+    align-items:center;
+    justify-content:center;
+    z-index:100;
+    padding:16px;
+  }
+  .modal-overlay.open{ display:flex; }
+  .modal{
+    background:#fff;
+    border-radius:14px;
+    padding:20px;
+    width:100%;
+    max-width:360px;
+    box-shadow:0 20px 40px rgba(0,0,0,0.2);
+  }
+  .modal.wide{ max-width:640px; }
+  .modal h3{
+    margin:0 0 14px 0;
+    font-size:15px;
+  }
+  .field{ margin-bottom:10px; }
+  .field label{
+    display:block;
+    font-size:11.5px;
+    font-weight:600;
+    color:var(--gray-700);
+    margin-bottom:4px;
+  }
+  .field input, .field select{
+    width:100%;
+    padding:8px 9px;
+    border:1px solid var(--gray-300);
+    border-radius:8px;
+    font-size:13px;
+    font-family:inherit;
+    background:#fff;
+  }
+  .field input:focus, .field select:focus{ outline:none; border-color:var(--blue); }
+  .compare-fields{ display:flex; gap:12px; }
+  .compare-fields .field{ flex:1; }
+  .modal-actions{
+    display:flex;
+    justify-content:flex-end;
+    gap:8px;
+    margin-top:14px;
+  }
+  .modal-actions button{
+    border-radius:8px;
+    padding:7px 14px;
+    font-size:12.5px;
+    font-weight:600;
+    cursor:pointer;
+    border:1px solid var(--gray-300);
+    background:#fff;
+  }
+  .modal-actions button.primary{ background:var(--blue); border-color:var(--blue); color:#fff; }
+  .modal-actions button.danger{ background:var(--red); border-color:var(--red); color:#fff; }
+
+  /* ---------- PROGRESSIVE ANALYTICS (collapsed by default) ---------- */
+  .analytics-toggle-row{
+    max-width:1600px;
+    margin:0 auto;
+    display:flex;
+    justify-content:center;
+    padding:2px 22px 14px;
+  }
+  .analytics-toggle-btn{
+    border:1px solid var(--gray-300);
+    background:#fff;
+    border-radius:20px;
+    padding:8px 18px;
+    font-size:12px;
+    font-weight:700;
+    color:var(--gray-700);
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+    gap:7px;
+    box-shadow:var(--shadow);
+    transition:background .15s, color .15s, border-color .15s;
+  }
+  .analytics-toggle-btn:hover{ background:var(--blue-light); border-color:#c7d9fb; color:var(--blue); }
+  .analytics-toggle-btn .chevron{
+    display:inline-block;
+    transition:transform .35s ease;
+    font-size:11px;
+  }
+  .analytics-toggle-btn.open .chevron{ transform:rotate(180deg); }
+
+  .analytics-panel{
+    max-height:0;
+    overflow:hidden;
+    opacity:0;
+    transition:max-height .45s cubic-bezier(.4,0,.2,1), opacity .35s ease;
+  }
+  .analytics-panel.open{ opacity:1; }
+  .analytics-inner{
+    max-width:1600px;
+    margin:0 auto;
+    padding:4px 22px 28px;
+  }
+  .analytics-header{
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+    margin-bottom:12px;
+  }
+  .analytics-header h2{
+    font-size:15px;
+    font-weight:800;
+    margin:0;
+    color:var(--gray-900);
+  }
+  .analytics-header span{
+    font-size:11.5px;
+    color:var(--gray-500);
+  }
+  .analytics-grid{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:14px;
+  }
+  .chart-card{
+    background:#fff;
+    border:1px solid var(--gray-100);
+    border-radius:var(--radius);
+    padding:14px 16px;
+    box-shadow:var(--shadow);
+  }
+  .chart-card.full{ grid-column:1 / -1; }
+  .chart-title{
+    font-size:11.5px;
+    font-weight:800;
+    color:var(--gray-700);
+    margin-bottom:2px;
+  }
+  .chart-subtitle{
+    font-size:10.5px;
+    color:var(--gray-500);
+    margin-bottom:8px;
+  }
+  .chart-legend{
+    display:flex;
+    gap:14px;
+    flex-wrap:wrap;
+    margin-top:6px;
+    font-size:10.5px;
+    color:var(--gray-500);
+  }
+  .chart-legend .dot{
+    display:inline-block;
+    width:8px;height:8px;
+    border-radius:50%;
+    margin-right:5px;
+  }
+  .chart-empty{
+    font-size:12px;
+    color:var(--gray-500);
+    padding:20px 0;
+    text-align:center;
+  }
+  .chart-row-split{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:14px;
+  }
+  .donut-wrap{
+    display:flex;
+    align-items:center;
+    gap:16px;
+  }
+  .donut{
+    width:120px;
+    height:120px;
+    border-radius:50%;
+    flex-shrink:0;
+  }
+  .donut-legend{
+    display:flex;
+    flex-direction:column;
+    gap:5px;
+    font-size:11px;
+    color:var(--gray-700);
+    max-height:120px;
+    overflow-y:auto;
+  }
+  .donut-legend .row{ display:flex; align-items:center; gap:6px; white-space:nowrap; }
+  .heatmap-table{ width:100%; border-collapse:collapse; font-size:11px; }
+  .heatmap-table th{
+    font-size:9.5px;
+    text-transform:uppercase;
+    color:var(--gray-500);
+    font-weight:700;
+    padding:4px 6px;
+    text-align:center;
+  }
+  .heatmap-table th:first-child{ text-align:left; }
+  .heatmap-table td{
+    padding:6px 6px;
+    text-align:center;
+    font-weight:700;
+    border-radius:6px;
+  }
+  .heatmap-table td.metric-label{
+    text-align:left;
+    font-weight:700;
+    color:var(--gray-700);
+    background:none !important;
+  }
+
+  /* ---------- RESPONSIVE ---------- */
+  @media (max-width:1150px){
+    .insight-panel{ grid-column:span 12; }
+    .summary-col{ grid-column:span 12; flex-direction:row; flex-wrap:wrap; }
+    .summary-card{ flex:1 1 calc(50% - 5px); }
+  }
+  @media (max-width:900px){
+    .app-shell{ flex-direction:column; }
+    .sidebar{ width:100%; flex-direction:row; align-items:center; flex-wrap:wrap; height:auto; border-right:none; border-bottom:1px solid var(--gray-100); }
+    .brand{ border-bottom:none; margin-bottom:0; padding-bottom:0; }
+    .sidebar-actions{ flex-direction:row; flex-wrap:wrap; }
+    .side-btn{ width:auto; }
+    .sidebar-footer{ display:none; }
+    .main-content{ height:auto; overflow:visible; }
+    .kpi-strip{ grid-template-columns:repeat(2,1fr); }
+    .analytics-grid{ grid-template-columns:1fr; }
+    .chart-row-split{ grid-template-columns:1fr; }
+    .donut-wrap{ flex-direction:column; align-items:flex-start; }
+  }
+  @media (max-width:560px){
+    .kpi-strip{ grid-template-columns:1fr; }
+    .header-stats{ flex-wrap:wrap; gap:12px; }
+    .header-stat{ border-right:none; padding-right:0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- SIDEBAR: actions only -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">Q</div>
+      <div class="brand-name">Quicket<br>Uganda</div>
+    </div>
+    <nav class="sidebar-actions">
+      <button class="side-btn primary" id="refreshDataBtn">🔄 Refresh Data</button>
+      <button class="side-btn" id="compareMonthsBtn">⇄ Compare Months</button>
+      <button class="side-btn" id="saveImageBtn">📷 Export Image</button>
+    </nav>
+    <div class="sidebar-footer">
+      Data comes live from a shared Google Sheet. To add or change numbers, edit the Sheet directly — everyone viewing this page sees the same data.
+      <a href="#" id="openMonthsSheetLink" class="sheet-link" target="_blank" rel="noopener">Open Months Sheet ↗</a><br>
+      <a href="#" id="openTargetsSheetLink" class="sheet-link" target="_blank" rel="noopener">Open Targets Sheet ↗</a>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
+
+    <!-- ROW 1: HEADER -->
+    <header class="dash-header">
+      <div class="header-left">
+        <h1>Quicket Uganda Performance</h1>
+        <p class="header-subtitle">Executive performance dashboard</p>
+      </div>
+      <div class="header-stats">
+        <div class="header-stat">
+          <span class="header-stat-label">Reporting Period</span>
+          <span class="header-stat-value" id="reportingPeriodValue">—</span>
+        </div>
+        <div class="header-stat">
+          <span class="header-stat-label">Annual Target</span>
+          <span class="header-stat-value" id="headerAnnualTarget">—</span>
+        </div>
+        <div class="header-stat">
+          <span class="header-stat-label">Last Refreshed</span>
+          <span class="header-stat-value" id="lastUpdatedValue">—</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="data-status-banner" id="dataStatusBanner" style="display:none;"></div>
+
+    <!-- ROW 2: KPI STRIP -->
+    <section class="kpi-strip">
+      <div class="kpi-card">
+        <div class="kpi-label">Tickets Sold</div>
+        <div class="kpi-value" id="kpiTickets">—</div>
+        <div class="kpi-sub" id="kpiTicketsSub">No data yet</div>
+        <svg class="kpi-spark" id="kpiTicketsSpark"></svg>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Revenue (GTV)</div>
+        <div class="kpi-value" id="kpiGtv">—</div>
+        <div class="kpi-sub" id="kpiGtvSub">No data yet</div>
+        <svg class="kpi-spark" id="kpiGtvSpark"></svg>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Ticket Target Achievement</div>
+        <div class="kpi-value" id="kpiTicketAch">—</div>
+        <div class="kpi-sub" id="kpiTicketAchSub">No data yet</div>
+        <div class="kpi-bar-track"><div class="kpi-bar-fill" id="kpiTicketAchFill" style="width:0%"></div></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Revenue Target Achievement</div>
+        <div class="kpi-value" id="kpiGtvAch">—</div>
+        <div class="kpi-sub" id="kpiGtvAchSub">No data yet</div>
+        <div class="kpi-bar-track"><div class="kpi-bar-fill" id="kpiGtvAchFill" style="width:0%"></div></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">MoM Ticket Growth</div>
+        <div class="kpi-value" id="kpiTicketGrowth">—</div>
+        <div class="kpi-sub" id="kpiTicketGrowthSub">No data yet</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">MoM Revenue Growth</div>
+        <div class="kpi-value" id="kpiGtvGrowth">—</div>
+        <div class="kpi-sub" id="kpiGtvGrowthSub">No data yet</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Best Performing Month</div>
+        <div class="kpi-value" id="kpiBestMonth">—</div>
+        <div class="kpi-sub" id="kpiBestMonthSub">No data yet</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Current Trend</div>
+        <div class="kpi-value" id="kpiTrend">—</div>
+        <div class="kpi-sub" id="kpiTrendSub">No data yet</div>
+      </div>
+    </section>
+
+    <!-- ROW 3: INSIGHT + SUMMARY -->
+    <section class="row-3">
+      <div class="insight-panel">
+        <div class="panel-title">Executive Insight</div>
+        <ul class="insight-list" id="insightList"></ul>
+      </div>
+
+      <div class="summary-col">
+        <div class="summary-card">
+          <div class="summary-head">
+            <span class="label">Annual Ticket Progress</span>
+            <span class="pct" id="annualTicketPct">0%</span>
+          </div>
+          <div class="summary-track"><div class="summary-fill" id="annualTicketFill" style="width:0%"></div></div>
+          <div class="summary-figures" id="annualTicketFigures">0 of 0 tickets</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-head">
+            <span class="label">Annual Revenue Progress</span>
+            <span class="pct" id="annualGtvPct">0%</span>
+          </div>
+          <div class="summary-track"><div class="summary-fill" id="annualGtvFill" style="width:0%"></div></div>
+          <div class="summary-figures" id="annualGtvFigures">UGX 0 of UGX 0</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-head">
+            <span class="label">Cumulative Tickets (Pace)</span>
+            <span class="pct" id="paceTicketPct">0%</span>
+          </div>
+          <div class="summary-track"><div class="summary-fill" id="paceTicketFill" style="width:0%"></div></div>
+          <div class="summary-figures" id="paceTicketFigures">—</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-head">
+            <span class="label">Cumulative Revenue (Pace)</span>
+            <span class="pct" id="paceGtvPct">0%</span>
+          </div>
+          <div class="summary-track"><div class="summary-fill" id="paceGtvFill" style="width:0%"></div></div>
+          <div class="summary-figures" id="paceGtvFigures">—</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ROW 4: PERFORMANCE TABLE -->
+    <section class="table-section">
+      <div class="panel-title">Monthly Performance</div>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Month</th>
+              <th>Tickets</th>
+              <th>Revenue</th>
+              <th>Ticket Δ</th>
+              <th>Revenue Δ</th>
+              <th>Ticket Target %</th>
+              <th>Revenue Target %</th>
+              <th>Trend</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+        <div class="empty-note" id="tableEmptyNote" style="display:none;">No monthly data yet. Add rows to the Google Sheet, then click "Refresh Data".</div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- Progressive disclosure: collapsed by default -->
+<div class="analytics-toggle-row">
+  <button class="analytics-toggle-btn" id="analyticsToggleBtn">
+    <span id="analyticsToggleLabel">View Detailed Analytics</span>
+    <span class="chevron" id="analyticsChevron">↓</span>
+  </button>
+</div>
+
+<div class="analytics-panel" id="analyticsPanel">
+  <div class="analytics-inner">
+    <div class="analytics-header">
+      <h2>Detailed Analytics</h2>
+      <span>Deeper trends and comparisons for analysts — not shown on the executive view by default.</span>
+    </div>
+    <div class="analytics-grid" id="analyticsGrid"></div>
+  </div>
+</div>
+
+<!-- Compare Months Modal -->
+<div class="modal-overlay" id="compareModalOverlay">
+  <div class="modal wide">
+    <h3>Compare Months</h3>
+    <div class="compare-fields">
+      <div class="field">
+        <label>Month A</label>
+        <select id="compareMonthA"></select>
+      </div>
+      <div class="field">
+        <label>Month B</label>
+        <select id="compareMonthB"></select>
+      </div>
+    </div>
+    <div id="compareResult"></div>
+    <div class="modal-actions">
+      <button id="compareCloseBtn">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ============================================================
+  // CONFIG — these point at the two Google Sheets living in the
+  // "Targets" Drive folder. Each Sheet must be shared as
+  // "Anyone with the link – Viewer" for this page to read it.
+  // ============================================================
+  var MONTHS_SPREADSHEET_ID = "1Tgxk127qWCHjI92jg9Hg_W0RlhavBnevDjITcvbDF2w";
+  var TARGETS_SPREADSHEET_ID = "17Qut6VdywgCycvzM6ai6hjLWClEvrF8lam5YmcH_HFI";
+  // Both Sheets' tabs are currently named "Untitled" (the default Google Sheets gives
+  // a tab when a CSV is converted). If you rename either tab yourself, update the
+  // matching line below to the new name — that's the only change needed.
+  var MONTHS_SHEET_TAB = "Untitled";
+  var TARGETS_SHEET_TAB = "Untitled";
+
+  var CACHE_KEY = "quicketPerfDashboard_cache_v1";
+  var AUTO_REFRESH_MS = 5 * 60 * 1000; // re-check the Sheet every 5 minutes
+
+  var defaultTargets = {
+    annualTickets: 171000,
+    annualGtv: 7760000000,
+    monthlyTickets: 14250,
+    monthlyGtv: 646666667
+  };
+
+  var state = {
+    targets: JSON.parse(JSON.stringify(defaultTargets)),
+    months: [],
+    lastUpdated: null
+  };
+
+  function sheetCsvUrl(spreadsheetId, tabName){
+    return "https://docs.google.com/spreadsheets/d/" + spreadsheetId +
+      "/gviz/tq?tqx=out:csv&sheet=" + encodeURIComponent(tabName) + "&_=" + Date.now();
+  }
+
+  function sheetEditUrl(spreadsheetId){
+    return "https://docs.google.com/spreadsheets/d/" + spreadsheetId + "/edit";
+  }
+
+  // Minimal CSV parser: handles quoted fields, embedded commas, and escaped quotes.
+  function parseCSV(text){
+    var rows = [];
+    var i = 0, field = "", row = [], inQuotes = false;
+    while(i < text.length){
+      var c = text[i];
+      if(inQuotes){
+        if(c === '"'){
+          if(text[i+1] === '"'){ field += '"'; i += 2; continue; }
+          inQuotes = false; i++; continue;
+        }
+        field += c; i++; continue;
+      } else {
+        if(c === '"'){ inQuotes = true; i++; continue; }
+        if(c === ','){ row.push(field); field = ""; i++; continue; }
+        if(c === '\r'){ i++; continue; }
+        if(c === '\n'){ row.push(field); rows.push(row); row = []; field = ""; i++; continue; }
+        field += c; i++; continue;
+      }
+    }
+    if(field.length > 0 || row.length > 0){ row.push(field); rows.push(row); }
+    return rows;
+  }
+
+  // Strips thousands separators, currency symbols, and stray whitespace before parsing.
+  // Sheets frequently exports formatted numbers like "400,000,000" or "UGX 400,000,000".
+  function parseNumber(raw){
+    if(raw === null || raw === undefined) return NaN;
+    var cleaned = String(raw).replace(/[^0-9.\-]/g, "");
+    if(cleaned === "" || cleaned === "-") return NaN;
+    return parseFloat(cleaned);
+  }
+
+  function parseMonthsRows(csvRows){
+    var months = [];
+    for(var i = 1; i < csvRows.length; i++){ // skip header row
+      var row = csvRows[i];
+      if(!row || row.length === 0) continue;
+      var monthKey = (row[0] || "").trim();
+      if(!/^\d{4}-\d{2}$/.test(monthKey)) continue; // skip blank/malformed rows
+      var tickets = parseNumber(row[1]);
+      var gtv = parseNumber(row[2]);
+      if(isNaN(tickets) || isNaN(gtv)) continue;
+      months.push({ month: monthKey, tickets: tickets, gtv: gtv });
+    }
+    return months;
+  }
+
+  function parseTargetsRows(csvRows, fallback){
+    var targets = JSON.parse(JSON.stringify(fallback));
+    var keyMap = {
+      "annualtickettarget": "annualTickets",
+      "annualgtvtarget": "annualGtv",
+      "monthlytickettarget": "monthlyTickets",
+      "monthlygtvtarget": "monthlyGtv"
+    };
+    for(var i = 1; i < csvRows.length; i++){
+      var row = csvRows[i];
+      if(!row || row.length < 2) continue;
+      var rawKey = (row[0] || "").trim().toLowerCase().replace(/[^a-z]/g, "");
+      var mapped = keyMap[rawKey];
+      var val = parseNumber(row[1]);
+      if(mapped && !isNaN(val) && val >= 0){ targets[mapped] = val; }
+    }
+    return targets;
+  }
+
+  function saveCache(){
+    try{
+      localStorage.setItem(CACHE_KEY, JSON.stringify({
+        targets: state.targets,
+        months: state.months,
+        lastUpdated: state.lastUpdated
+      }));
+    }catch(e){ /* ignore quota errors */ }
+  }
+
+  function loadCache(){
+    try{
+      var raw = localStorage.getItem(CACHE_KEY);
+      if(!raw) return null;
+      return JSON.parse(raw);
+    }catch(e){ return null; }
+  }
+
+  function showBanner(kind, text){
+    var el = document.getElementById("dataStatusBanner");
+    el.className = "data-status-banner " + kind;
+    el.textContent = text;
+    el.style.display = "flex";
+  }
+
+  function hideBanner(){
+    var el = document.getElementById("dataStatusBanner");
+    el.style.display = "none";
+  }
+
+  function loadFromSheet(isAutoRefresh){
+    if(!isAutoRefresh) showBanner("loading", "⏳ Loading the latest data from the Google Sheets…");
+
+    Promise.all([
+      fetch(sheetCsvUrl(MONTHS_SPREADSHEET_ID, MONTHS_SHEET_TAB)).then(function(r){
+        if(!r.ok) throw new Error('Could not read the Months sheet (HTTP ' + r.status + ').');
+        return r.text();
+      }),
+      fetch(sheetCsvUrl(TARGETS_SPREADSHEET_ID, TARGETS_SHEET_TAB)).then(function(r){
+        if(!r.ok) throw new Error('Could not read the Targets sheet (HTTP ' + r.status + ').');
+        return r.text();
+      })
+    ]).then(function(results){
+      var monthsRows = parseCSV(results[0]);
+      var targetsRows = parseCSV(results[1]);
+      state.months = parseMonthsRows(monthsRows);
+      state.targets = parseTargetsRows(targetsRows, defaultTargets);
+      state.lastUpdated = new Date().toISOString();
+      saveCache();
+      hideBanner();
+      render();
+    }).catch(function(err){
+      var cached = loadCache();
+      if(cached){
+        state.targets = cached.targets;
+        state.months = cached.months;
+        state.lastUpdated = cached.lastUpdated;
+        showBanner("stale", "⚠ Could not refresh from the Sheet just now (" + err.message + "). Showing the last saved data instead.");
+      } else {
+        showBanner("error", "⚠ Could not load data from the Google Sheets. " + err.message + ' Make sure both the Months and Targets sheets are shared as "Anyone with the link – Viewer".');
+      }
+      render();
+    });
+  }
+
+  // ---------- Formatting helpers ----------
+  function fmtInt(n){
+    if(n === null || n === undefined || isNaN(n)) return "—";
+    return Math.round(n).toLocaleString("en-US");
+  }
+
+  function fmtCurrencyCompact(n){
+    if(n === null || n === undefined || isNaN(n)) return "—";
+    var sign = n < 0 ? "-" : "";
+    var abs = Math.abs(n);
+    var out;
+    if(abs >= 1e9) out = (abs/1e9).toFixed(2) + "B";
+    else if(abs >= 1e6) out = (abs/1e6).toFixed(2) + "M";
+    else if(abs >= 1e3) out = (abs/1e3).toFixed(1) + "K";
+    else out = abs.toFixed(0);
+    return "UGX " + sign + out;
+  }
+
+  function fmtCurrencyFull(n){
+    if(n === null || n === undefined || isNaN(n)) return "—";
+    return "UGX " + Math.round(n).toLocaleString("en-US");
+  }
+
+  function fmtPct(n, digits){
+    if(n === null || n === undefined || isNaN(n) || !isFinite(n)) return "—";
+    digits = digits === undefined ? 1 : digits;
+    return n.toFixed(digits) + "%";
+  }
+
+  function fmtSignedPct(n, digits){
+    if(n === null || n === undefined || isNaN(n) || !isFinite(n)) return "—";
+    digits = digits === undefined ? 1 : digits;
+    var sign = n > 0 ? "+" : "";
+    return sign + n.toFixed(digits) + "%";
+  }
+
+  function fmtSignedInt(n){
+    if(n === null || n === undefined || isNaN(n)) return "—";
+    var sign = n > 0 ? "+" : "";
+    return sign + fmtInt(n);
+  }
+
+  var MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  var FULL_MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+  function monthLabel(key){
+    if(!key) return "—";
+    var parts = key.split("-");
+    var y = parseInt(parts[0],10), m = parseInt(parts[1],10);
+    return MONTH_NAMES[m-1] + " " + y;
+  }
+
+  function shortMonthLabel(key){
+    if(!key) return "—";
+    var parts = key.split("-");
+    var y = parts[0].slice(2), m = parseInt(parts[1],10);
+    return MONTH_NAMES[m-1] + "'" + y;
+  }
+
+  function trendArrow(pct){
+    if(pct === null || pct === undefined || isNaN(pct) || !isFinite(pct)) return {sym:"►", cls:"flat"};
+    if(pct > 2) return {sym:"▲", cls:"up"};
+    if(pct < -2) return {sym:"▼", cls:"down"};
+    return {sym:"►", cls:"flat"};
+  }
+
+  function getTrackingYear(rows){
+    if(rows && rows.length) return rows[rows.length-1].year;
+    return String(new Date().getFullYear());
+  }
+
+  function formatReportingPeriod(rows){
+    if(!rows || rows.length === 0) return "No data loaded yet";
+    var first = rows[0];
+    var last = rows[rows.length-1];
+    var firstParts = first.key.split("-");
+    var lastParts = last.key.split("-");
+    var firstYear = firstParts[0], lastYear = lastParts[0];
+    var firstMonthName = FULL_MONTH_NAMES[parseInt(firstParts[1],10)-1];
+    var lastMonthName = FULL_MONTH_NAMES[parseInt(lastParts[1],10)-1];
+    if(first.key === last.key) return firstMonthName + " " + firstYear;
+    if(firstYear === lastYear) return firstMonthName + " – " + lastMonthName + " " + firstYear;
+    return firstMonthName + " " + firstYear + " – " + lastMonthName + " " + lastYear;
+  }
+
+  function formatLastUpdated(iso){
+    if(!iso) return "Never";
+    var d = new Date(iso);
+    if(isNaN(d.getTime())) return "Never";
+    var months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    var hours = d.getHours();
+    var ampm = hours >= 12 ? "PM" : "AM";
+    var h12 = hours % 12; if(h12 === 0) h12 = 12;
+    var mins = d.getMinutes().toString().padStart(2,"0");
+    return months[d.getMonth()] + " " + d.getDate() + ", " + d.getFullYear() + " · " + h12 + ":" + mins + " " + ampm;
+  }
+
+  function achievementTier(pct){
+    if(pct === null || pct === undefined || isNaN(pct)) return "amber";
+    if(pct >= 100) return "green";
+    if(pct >= 70) return "amber";
+    return "red";
+  }
+
+  // ---------- Core calculation engine ----------
+  function computeRows(){
+    var months = state.months.slice().sort(function(a,b){
+      return a.month < b.month ? -1 : (a.month > b.month ? 1 : 0);
+    });
+
+    var cumTicketsByYear = {};
+    var cumGtvByYear = {};
+
+    var rows = months.map(function(m, idx){
+      var prev = idx > 0 ? months[idx-1] : null;
+      var year = m.month.split("-")[0];
+
+      var ticketsDelta = prev ? (m.tickets - prev.tickets) : null;
+      var ticketsPct = prev && prev.tickets !== 0 ? (ticketsDelta/prev.tickets*100) : null;
+      var gtvDelta = prev ? (m.gtv - prev.gtv) : null;
+      var gtvPct = prev && prev.gtv !== 0 ? (gtvDelta/prev.gtv*100) : null;
+
+      var ticketsVsTarget = state.targets.monthlyTickets > 0 ? (m.tickets/state.targets.monthlyTickets*100) : null;
+      var gtvVsTarget = state.targets.monthlyGtv > 0 ? (m.gtv/state.targets.monthlyGtv*100) : null;
+
+      cumTicketsByYear[year] = (cumTicketsByYear[year] || 0) + m.tickets;
+      cumGtvByYear[year] = (cumGtvByYear[year] || 0) + m.gtv;
+
+      var cumTickets = cumTicketsByYear[year];
+      var cumGtv = cumGtvByYear[year];
+
+      var annualTicketPct = state.targets.annualTickets > 0 ? (cumTickets/state.targets.annualTickets*100) : null;
+      var annualGtvPct = state.targets.annualGtv > 0 ? (cumGtv/state.targets.annualGtv*100) : null;
+
+      var trendBasis = gtvPct !== null ? gtvPct : (ticketsPct !== null ? ticketsPct : 0);
+      var trend = trendArrow(trendBasis);
+
+      return {
+        key: m.month,
+        label: monthLabel(m.month),
+        tickets: m.tickets,
+        gtv: m.gtv,
+        ticketsDelta: ticketsDelta,
+        ticketsPct: ticketsPct,
+        gtvDelta: gtvDelta,
+        gtvPct: gtvPct,
+        ticketsVsTarget: ticketsVsTarget,
+        gtvVsTarget: gtvVsTarget,
+        cumTickets: cumTickets,
+        cumGtv: cumGtv,
+        annualTicketPct: annualTicketPct,
+        annualGtvPct: annualGtvPct,
+        trend: trend,
+        year: year
+      };
+    });
+
+    return rows;
+  }
+
+  // ---------- Sparkline builder ----------
+  function buildSparklineSVG(values, color){
+    var w = 60, h = 24, pad = 2;
+    var n = values.length;
+    if(n < 2){
+      return '<line x1="0" y1="'+(h/2)+'" x2="'+w+'" y2="'+(h/2)+'" stroke="'+color+'" stroke-width="1.5" stroke-dasharray="2,2" opacity="0.4"></line>';
+    }
+    var max = Math.max.apply(null, values);
+    var min = Math.min.apply(null, values, 0);
+    min = Math.min(min, 0);
+    var range = (max - min) || 1;
+    var stepX = (w - pad*2)/(n-1);
+    var points = values.map(function(v,i){
+      var x = pad + i*stepX;
+      var y = pad + (h - pad*2) - ((v-min)/range)*(h - pad*2);
+      return x+","+y;
+    }).join(" ");
+    var lastX = pad + (n-1)*stepX;
+    var lastY = pad + (h - pad*2) - ((values[n-1]-min)/range)*(h - pad*2);
+    return '<polyline points="'+points+'" fill="none" stroke="'+color+'" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></polyline>' +
+      '<circle cx="'+lastX+'" cy="'+lastY+'" r="2" fill="'+color+'"></circle>';
+  }
+
+  var PALETTE = ["#1d4ed8","#15803d","#b45309","#7c3aed","#0891b2","#be185d","#65a30d","#ea580c","#0f766e","#9333ea","#ca8a04","#334155"];
+
+  function paletteColor(i){ return PALETTE[i % PALETTE.length]; }
+
+  // Continuous red -> amber -> green heat color for a 0-130% achievement scale
+  function pctToHeatColor(pct){
+    if(pct === null || pct === undefined || isNaN(pct)) return {bg:"#f1f5f9", fg:"#64748b"};
+    var clamped = Math.max(0, Math.min(130, pct));
+    var hue = (clamped/130) * 120; // 0=red -> 120=green
+    return {bg:"hsl("+hue.toFixed(0)+",70%,90%)", fg:"hsl("+hue.toFixed(0)+",55%,28%)"};
+  }
+
+  // ---------- Chart builders (pure inline SVG / CSS, no external libs) ----------
+  function buildGroupedBarChartSVG(rows, keyA, keyB, colorA, colorB){
+    var w = 620, h = 210, padL = 8, padR = 8, padT = 12, padB = 26;
+    var innerW = w - padL - padR, innerH = h - padT - padB;
+    var n = rows.length;
+    var groupW = innerW / n;
+    var barW = Math.max(4, Math.min(20, groupW/2 - 4));
+    var maxA = Math.max.apply(null, rows.map(function(r){ return r[keyA]; })) || 1;
+    var maxB = Math.max.apply(null, rows.map(function(r){ return r[keyB]; })) || 1;
+    var bars = "";
+    rows.forEach(function(r,i){
+      var gx = padL + i*groupW;
+      var hA = (r[keyA]/maxA) * innerH;
+      var hB = (r[keyB]/maxB) * innerH;
+      var xA = gx + groupW/2 - barW - 2;
+      var xB = gx + groupW/2 + 2;
+      bars += '<rect x="'+xA+'" y="'+(padT+innerH-hA)+'" width="'+barW+'" height="'+Math.max(1,hA)+'" rx="2" fill="'+colorA+'"></rect>';
+      bars += '<rect x="'+xB+'" y="'+(padT+innerH-hB)+'" width="'+barW+'" height="'+Math.max(1,hB)+'" rx="2" fill="'+colorB+'"></rect>';
+      bars += '<text x="'+(gx+groupW/2)+'" y="'+(h-8)+'" font-size="9" fill="#64748b" text-anchor="middle">'+shortMonthLabel(r.key)+'</text>';
+    });
+    return '<svg viewBox="0 0 '+w+' '+h+'" style="width:100%;height:auto;display:block;">'+bars+'</svg>';
+  }
+
+  function buildGrowthChartSVG(rows){
+    var withGrowth = rows.filter(function(r){ return r.ticketsPct !== null || r.gtvPct !== null; });
+    if(withGrowth.length === 0) return null;
+    var w = 620, h = 220, padL = 8, padR = 8, padT = 10, padB = 26;
+    var innerW = w - padL - padR, innerH = h - padT - padB;
+    var midY = padT + innerH/2, halfH = innerH/2;
+    var n = withGrowth.length;
+    var groupW = innerW / n;
+    var barW = Math.max(4, Math.min(16, groupW/2 - 4));
+    var maxAbs = Math.max.apply(null, withGrowth.map(function(r){
+      return Math.max(Math.abs(r.ticketsPct||0), Math.abs(r.gtvPct||0));
+    })) || 1;
+    var bars = '<line x1="'+padL+'" y1="'+midY+'" x2="'+(w-padR)+'" y2="'+midY+'" stroke="#e2e8f0" stroke-width="1"></line>';
+    withGrowth.forEach(function(r,i){
+      var gx = padL + i*groupW;
+      var tPct = r.ticketsPct || 0, gPct = r.gtvPct || 0;
+      var hT = (Math.abs(tPct)/maxAbs) * halfH;
+      var hG = (Math.abs(gPct)/maxAbs) * halfH;
+      var xT = gx + groupW/2 - barW - 2, xG = gx + groupW/2 + 2;
+      var yT = tPct >= 0 ? midY - hT : midY;
+      var yG = gPct >= 0 ? midY - hG : midY;
+      bars += '<rect x="'+xT+'" y="'+yT+'" width="'+barW+'" height="'+Math.max(1,hT)+'" rx="2" fill="#1d4ed8" opacity="0.9"></rect>';
+      bars += '<rect x="'+xG+'" y="'+yG+'" width="'+barW+'" height="'+Math.max(1,hG)+'" rx="2" fill="#15803d" opacity="0.9"></rect>';
+      bars += '<text x="'+(gx+groupW/2)+'" y="'+(h-8)+'" font-size="9" fill="#64748b" text-anchor="middle">'+shortMonthLabel(r.key)+'</text>';
+    });
+    return '<svg viewBox="0 0 '+w+' '+h+'" style="width:100%;height:auto;display:block;">'+bars+'</svg>';
+  }
+
+  function buildTargetVsActualSVG(rows, key, target, color){
+    var w = 300, h = 170, padL = 8, padR = 8, padT = 10, padB = 24;
+    var innerW = w - padL - padR, innerH = h - padT - padB;
+    var n = rows.length;
+    var groupW = innerW / n;
+    var barW = Math.max(4, Math.min(22, groupW - 8));
+    var maxVal = Math.max.apply(null, rows.map(function(r){ return r[key]; }).concat([target])) || 1;
+    var bars = "";
+    rows.forEach(function(r,i){
+      var gx = padL + i*groupW + (groupW-barW)/2;
+      var hV = (r[key]/maxVal) * innerH;
+      bars += '<rect x="'+gx+'" y="'+(padT+innerH-hV)+'" width="'+barW+'" height="'+Math.max(1,hV)+'" rx="2" fill="'+color+'" opacity="0.85"></rect>';
+      bars += '<text x="'+(gx+barW/2)+'" y="'+(h-8)+'" font-size="8.5" fill="#64748b" text-anchor="middle">'+shortMonthLabel(r.key)+'</text>';
+    });
+    var targetY = padT + innerH - (target/maxVal)*innerH;
+    var targetLine = '<line x1="'+padL+'" y1="'+targetY+'" x2="'+(w-padR)+'" y2="'+targetY+'" stroke="#b91c1c" stroke-width="1.4" stroke-dasharray="4,3"></line>' +
+      '<text x="'+(w-padR)+'" y="'+(targetY-4)+'" font-size="8.5" fill="#b91c1c" text-anchor="end">Target</text>';
+    return '<svg viewBox="0 0 '+w+' '+h+'" style="width:100%;height:auto;display:block;">'+bars+targetLine+'</svg>';
+  }
+
+  function buildMultiLineChartSVG(rows, series, opts){
+    opts = opts || {};
+    var w = 620, h = 210, padL = 8, padR = 8, padT = 10, padB = 26;
+    var innerW = w - padL - padR, innerH = h - padT - padB;
+    var n = rows.length;
+    var stepX = n > 1 ? innerW/(n-1) : 0;
+    var allVals = [];
+    series.forEach(function(s){ rows.forEach(function(r){ var v=s.get(r); if(v!==null && v!==undefined) allVals.push(v); }); });
+    var maxV = opts.fixedMax || Math.max.apply(null, allVals.concat([0])) || 1;
+    var minV = 0;
+
+    function xAt(i){ return padL + (n>1 ? i*stepX : innerW/2); }
+    function yAt(v){ return padT + innerH - ((v-minV)/((maxV-minV)||1))*innerH; }
+
+    var refLine = "";
+    if(opts.refValue !== undefined){
+      var ry = yAt(opts.refValue);
+      refLine = '<line x1="'+padL+'" y1="'+ry+'" x2="'+(w-padR)+'" y2="'+ry+'" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4,3"></line>' +
+        '<text x="'+(w-padR)+'" y="'+(ry-4)+'" font-size="8.5" fill="#94a3b8" text-anchor="end">'+opts.refLabel+'</text>';
+    }
+
+    var lines = series.map(function(s){
+      var pts = rows.map(function(r,i){ var v=s.get(r); return v===null||v===undefined ? null : xAt(i)+","+yAt(v); }).filter(function(p){return p!==null;});
+      var circles = rows.map(function(r,i){ var v=s.get(r); if(v===null||v===undefined) return ""; return '<circle cx="'+xAt(i)+'" cy="'+yAt(v)+'" r="2.6" fill="'+s.color+'"></circle>'; }).join("");
+      return '<polyline points="'+pts.join(" ")+'" fill="none" stroke="'+s.color+'" stroke-width="2"></polyline>' + circles;
+    }).join("");
+
+    var labels = rows.map(function(r,i){
+      return '<text x="'+xAt(i)+'" y="'+(h-8)+'" font-size="9" fill="#64748b" text-anchor="middle">'+shortMonthLabel(r.key)+'</text>';
+    }).join("");
+
+    return '<svg viewBox="0 0 '+w+' '+h+'" style="width:100%;height:auto;display:block;">'+refLine+lines+labels+'</svg>';
+  }
+
+  function buildDonutHTML(rows, key, formatFn){
+    var total = rows.reduce(function(s,r){ return s + r[key]; }, 0);
+    if(total <= 0) return '<div class="chart-empty">Not enough data yet.</div>';
+    var acc = 0;
+    var stops = rows.map(function(r,i){
+      var pct = r[key]/total*100;
+      var start = acc;
+      acc += pct;
+      return paletteColor(i) + " " + start.toFixed(2) + "% " + acc.toFixed(2) + "%";
+    }).join(", ");
+    var legend = rows.map(function(r,i){
+      var pct = (r[key]/total*100).toFixed(1);
+      return '<div class="row"><span style="background:'+paletteColor(i)+';width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0;"></span>' +
+        shortMonthLabel(r.key) + " — " + pct + "%" + '</div>';
+    }).join("");
+    return '<div class="donut-wrap">' +
+      '<div class="donut" style="background:conic-gradient(' + stops + ');"></div>' +
+      '<div class="donut-legend">' + legend + '</div>' +
+      '</div>';
+  }
+
+  function buildHeatmapHTML(rows){
+    if(rows.length === 0) return '<div class="chart-empty">Not enough data yet.</div>';
+    var headerCells = rows.map(function(r){ return '<th>'+shortMonthLabel(r.key)+'</th>'; }).join("");
+    function rowHTML(label, values){
+      var cells = values.map(function(v){
+        var c = pctToHeatColor(v);
+        var text = (v===null||v===undefined) ? "—" : v.toFixed(0)+"%";
+        return '<td style="background:'+c.bg+';color:'+c.fg+';">'+text+'</td>';
+      }).join("");
+      return '<tr><td class="metric-label">'+label+'</td>'+cells+'</tr>';
+    }
+    var ticketRow = rowHTML("Ticket Target %", rows.map(function(r){ return r.ticketsVsTarget; }));
+    var gtvRow = rowHTML("Revenue Target %", rows.map(function(r){ return r.gtvVsTarget; }));
+    return '<table class="heatmap-table"><thead><tr><th></th>'+headerCells+'</tr></thead><tbody>'+ticketRow+gtvRow+'</tbody></table>';
+  }
+
+  function buildAovChartSVG(rows){
+    var aovRows = rows.filter(function(r){ return r.tickets > 0; });
+    if(aovRows.length < 2) return null;
+    return buildMultiLineChartSVG(aovRows, [
+      { get:function(r){ return r.gtv/r.tickets; }, color:"#7c3aed" }
+    ]);
+  }
+
+  function chartCard(title, subtitle, bodyHtml, extraClass){
+    return '<div class="chart-card'+(extraClass?" "+extraClass:"")+'">' +
+      '<div class="chart-title">'+title+'</div>' +
+      (subtitle ? '<div class="chart-subtitle">'+subtitle+'</div>' : '') +
+      bodyHtml +
+      '</div>';
+  }
+
+  function renderAnalytics(rows){
+    var grid = document.getElementById("analyticsGrid");
+    if(rows.length < 2){
+      grid.innerHTML = '<div class="chart-card full"><div class="chart-empty">Add at least two months of data to unlock detailed analytics.</div></div>';
+      return;
+    }
+
+    var year = getTrackingYear(rows);
+    var html = "";
+
+    // 1. Monthly Tickets vs Revenue
+    html += chartCard(
+      "Monthly Tickets vs Revenue",
+      "Each series scaled to its own peak so shapes can be compared",
+      buildGroupedBarChartSVG(rows, "tickets", "gtv", "#1d4ed8", "#15803d") +
+      '<div class="chart-legend"><span><span class="dot" style="background:#1d4ed8;"></span>Tickets</span><span><span class="dot" style="background:#15803d;"></span>Revenue</span></div>'
+    );
+
+    // 2. Month-on-Month Growth
+    var growthSvg = buildGrowthChartSVG(rows);
+    html += chartCard(
+      "Month-on-Month Growth",
+      "Percentage change vs the previous month",
+      growthSvg ? (growthSvg + '<div class="chart-legend"><span><span class="dot" style="background:#1d4ed8;"></span>Ticket Growth %</span><span><span class="dot" style="background:#15803d;"></span>Revenue Growth %</span></div>')
+                 : '<div class="chart-empty">Add at least two months of data to see growth.</div>'
+    );
+
+    // 3. Target vs Actual (tickets + revenue side by side)
+    html += chartCard(
+      "Target vs Actual",
+      "Monthly actuals against the fixed monthly target",
+      '<div class="chart-row-split">' +
+        '<div><div class="chart-subtitle" style="margin-bottom:4px;">Tickets</div>' + buildTargetVsActualSVG(rows, "tickets", state.targets.monthlyTickets, "#1d4ed8") + '</div>' +
+        '<div><div class="chart-subtitle" style="margin-bottom:4px;">Revenue</div>' + buildTargetVsActualSVG(rows, "gtv", state.targets.monthlyGtv, "#15803d") + '</div>' +
+      '</div>'
+    );
+
+    // 4. Cumulative Performance over time
+    html += chartCard(
+      "Cumulative Performance (" + year + ")",
+      "Cumulative progress toward each annual target",
+      buildMultiLineChartSVG(rows.filter(function(r){return r.year===year;}), [
+        { get:function(r){ return r.annualTicketPct; }, color:"#1d4ed8" },
+        { get:function(r){ return r.annualGtvPct; }, color:"#15803d" }
+      ], { refValue:100, refLabel:"100% of annual target" }) +
+      '<div class="chart-legend"><span><span class="dot" style="background:#1d4ed8;"></span>Ticket Progress %</span><span><span class="dot" style="background:#15803d;"></span>Revenue Progress %</span></div>'
+    );
+
+    // 5. Revenue contribution by month
+    html += chartCard(
+      "Revenue Contribution by Month",
+      "Share of total recorded revenue",
+      buildDonutHTML(rows, "gtv")
+    );
+
+    // 6. Ticket contribution by month
+    html += chartCard(
+      "Ticket Contribution by Month",
+      "Share of total recorded tickets",
+      buildDonutHTML(rows, "tickets")
+    );
+
+    // 7. Performance heatmap (optional)
+    html += chartCard(
+      "Performance Heatmap",
+      "Target achievement per month — red is behind, green is ahead",
+      buildHeatmapHTML(rows),
+      "full"
+    );
+
+    // 8. Bonus: average revenue per ticket trend
+    var aovSvg = buildAovChartSVG(rows);
+    if(aovSvg){
+      html += chartCard(
+        "Average Revenue per Ticket",
+        "Revenue ÷ tickets sold, month by month",
+        aovSvg
+      );
+    }
+
+    grid.innerHTML = html;
+  }
+
+  var analyticsRendered = false;
+
+  function toggleAnalytics(){
+    var panel = document.getElementById("analyticsPanel");
+    var btn = document.getElementById("analyticsToggleBtn");
+    var label = document.getElementById("analyticsToggleLabel");
+    var isOpen = panel.classList.contains("open");
+
+    if(!isOpen){
+      panel.classList.add("open");
+      btn.classList.add("open");
+      panel.style.maxHeight = panel.scrollHeight + "px";
+      label.textContent = "Hide Detailed Analytics";
+    } else {
+      panel.style.maxHeight = panel.scrollHeight + "px";
+      requestAnimationFrame(function(){
+        requestAnimationFrame(function(){
+          panel.style.maxHeight = "0px";
+        });
+      });
+      panel.classList.remove("open");
+      btn.classList.remove("open");
+      label.textContent = "View Detailed Analytics";
+    }
+  }
+
+  // ---------- Rendering ----------
+  function render(){
+    var rows = computeRows();
+    renderHeader(rows);
+    renderKpis(rows);
+    renderInsights(rows);
+    renderSummaryCards(rows);
+    renderTable(rows);
+    renderAnalytics(rows);
+
+    // Keep an already-open analytics panel correctly sized if the underlying data changes
+    var panel = document.getElementById("analyticsPanel");
+    if(panel.classList.contains("open")){
+      panel.style.maxHeight = panel.scrollHeight + "px";
+    }
+  }
+
+  function renderHeader(rows){
+    document.getElementById("reportingPeriodValue").textContent = formatReportingPeriod(rows);
+    document.getElementById("headerAnnualTarget").textContent =
+      fmtInt(state.targets.annualTickets) + " Tickets | " + fmtCurrencyCompact(state.targets.annualGtv);
+    document.getElementById("lastUpdatedValue").textContent = formatLastUpdated(state.lastUpdated);
+  }
+
+  function renderKpis(rows){
+    var latest = rows.length ? rows[rows.length-1] : null;
+    var prev = rows.length > 1 ? rows[rows.length-2] : null;
+
+    var ticketsEl = document.getElementById("kpiTickets");
+    var ticketsSub = document.getElementById("kpiTicketsSub");
+    var gtvEl = document.getElementById("kpiGtv");
+    var gtvSub = document.getElementById("kpiGtvSub");
+    var ticketAchEl = document.getElementById("kpiTicketAch");
+    var ticketAchSub = document.getElementById("kpiTicketAchSub");
+    var ticketAchFill = document.getElementById("kpiTicketAchFill");
+    var gtvAchEl = document.getElementById("kpiGtvAch");
+    var gtvAchSub = document.getElementById("kpiGtvAchSub");
+    var gtvAchFill = document.getElementById("kpiGtvAchFill");
+    var ticketGrowthEl = document.getElementById("kpiTicketGrowth");
+    var ticketGrowthSub = document.getElementById("kpiTicketGrowthSub");
+    var gtvGrowthEl = document.getElementById("kpiGtvGrowth");
+    var gtvGrowthSub = document.getElementById("kpiGtvGrowthSub");
+    var bestMonthEl = document.getElementById("kpiBestMonth");
+    var bestMonthSub = document.getElementById("kpiBestMonthSub");
+    var trendEl = document.getElementById("kpiTrend");
+    var trendSub = document.getElementById("kpiTrendSub");
+
+    if(!latest){
+      ticketsEl.textContent = "—"; ticketsSub.textContent = "No data yet"; ticketsSub.className = "kpi-sub flat";
+      gtvEl.textContent = "—"; gtvSub.textContent = "No data yet"; gtvSub.className = "kpi-sub flat";
+      ticketAchEl.textContent = "—"; ticketAchSub.textContent = "No data yet"; ticketAchFill.style.width = "0%";
+      gtvAchEl.textContent = "—"; gtvAchSub.textContent = "No data yet"; gtvAchFill.style.width = "0%";
+      ticketGrowthEl.textContent = "—"; ticketGrowthSub.textContent = "No data yet";
+      gtvGrowthEl.textContent = "—"; gtvGrowthSub.textContent = "No data yet";
+      bestMonthEl.textContent = "—"; bestMonthSub.textContent = "No data yet";
+      trendEl.textContent = "—"; trendSub.textContent = "No data yet";
+      document.getElementById("kpiTicketsSpark").innerHTML = "";
+      document.getElementById("kpiGtvSpark").innerHTML = "";
+      return;
+    }
+
+    // Tickets Sold
+    ticketsEl.textContent = fmtInt(latest.tickets);
+    if(latest.ticketsPct === null){
+      ticketsSub.textContent = latest.label + " · first recorded month";
+      ticketsSub.className = "kpi-sub flat";
+    } else {
+      var ta = trendArrow(latest.ticketsPct);
+      ticketsSub.innerHTML = '<span class="kpi-dot dot-'+(ta.cls==="up"?"up":(ta.cls==="down"?"down":"flat"))+'"></span>' + ta.sym + " " + fmtSignedPct(latest.ticketsPct) + " vs " + prev.label;
+      ticketsSub.className = "kpi-sub " + ta.cls;
+    }
+    document.getElementById("kpiTicketsSpark").innerHTML = buildSparklineSVG(rows.map(function(r){return r.tickets;}), "#1d4ed8");
+
+    // Revenue
+    gtvEl.textContent = fmtCurrencyCompact(latest.gtv);
+    if(latest.gtvPct === null){
+      gtvSub.textContent = latest.label + " · first recorded month";
+      gtvSub.className = "kpi-sub flat";
+    } else {
+      var ga = trendArrow(latest.gtvPct);
+      gtvSub.innerHTML = '<span class="kpi-dot dot-'+(ga.cls==="up"?"up":(ga.cls==="down"?"down":"flat"))+'"></span>' + ga.sym + " " + fmtSignedPct(latest.gtvPct) + " vs " + prev.label;
+      gtvSub.className = "kpi-sub " + ga.cls;
+    }
+    document.getElementById("kpiGtvSpark").innerHTML = buildSparklineSVG(rows.map(function(r){return r.gtv;}), "#15803d");
+
+    // Ticket Target Achievement
+    var tAch = latest.ticketsVsTarget;
+    var tTier = achievementTier(tAch);
+    ticketAchEl.textContent = tAch === null ? "—" : fmtPct(tAch);
+    ticketAchSub.textContent = fmtInt(latest.tickets) + " of " + fmtInt(state.targets.monthlyTickets) + " target";
+    ticketAchFill.style.width = Math.min(100, Math.max(0, tAch || 0)) + "%";
+    ticketAchFill.className = "kpi-bar-fill bar-" + tTier;
+
+    // Revenue Target Achievement
+    var gAch = latest.gtvVsTarget;
+    var gTier = achievementTier(gAch);
+    gtvAchEl.textContent = gAch === null ? "—" : fmtPct(gAch);
+    gtvAchSub.textContent = fmtCurrencyCompact(latest.gtv) + " of " + fmtCurrencyCompact(state.targets.monthlyGtv) + " target";
+    gtvAchFill.style.width = Math.min(100, Math.max(0, gAch || 0)) + "%";
+    gtvAchFill.className = "kpi-bar-fill bar-" + gTier;
+
+    // MoM Ticket Growth
+    if(latest.ticketsPct === null){
+      ticketGrowthEl.textContent = "—";
+      ticketGrowthSub.textContent = "First recorded month";
+      ticketGrowthSub.className = "kpi-sub flat";
+    } else {
+      var tg = trendArrow(latest.ticketsPct);
+      ticketGrowthEl.textContent = fmtSignedPct(latest.ticketsPct);
+      ticketGrowthEl.className = "kpi-value " + tg.cls;
+      ticketGrowthSub.innerHTML = '<span class="kpi-dot dot-'+tg.cls+'"></span>vs ' + prev.label;
+      ticketGrowthSub.className = "kpi-sub " + tg.cls;
+    }
+
+    // MoM Revenue Growth
+    if(latest.gtvPct === null){
+      gtvGrowthEl.textContent = "—";
+      gtvGrowthSub.textContent = "First recorded month";
+      gtvGrowthSub.className = "kpi-sub flat";
+    } else {
+      var gg = trendArrow(latest.gtvPct);
+      gtvGrowthEl.textContent = fmtSignedPct(latest.gtvPct);
+      gtvGrowthEl.className = "kpi-value " + gg.cls;
+      gtvGrowthSub.innerHTML = '<span class="kpi-dot dot-'+gg.cls+'"></span>vs ' + prev.label;
+      gtvGrowthSub.className = "kpi-sub " + gg.cls;
+    }
+
+    // Best Performing Month (all-time, by revenue)
+    var best = rows.reduce(function(a,b){ return b.gtv > a.gtv ? b : a; });
+    bestMonthEl.textContent = best.label;
+    bestMonthSub.textContent = fmtCurrencyCompact(best.gtv) + " revenue";
+
+    // Current Trend
+    var trendBasisPct = latest.gtvPct !== null ? latest.gtvPct : latest.ticketsPct;
+    if(trendBasisPct === null){
+      trendEl.textContent = "—";
+      trendSub.textContent = "Insufficient data";
+    } else {
+      var tr = trendArrow(trendBasisPct);
+      var word = tr.cls === "up" ? "Improving" : (tr.cls === "down" ? "Declining" : "Flat");
+      trendEl.textContent = tr.sym + " " + word;
+      trendEl.className = "kpi-value " + tr.cls;
+      trendSub.textContent = "Based on revenue vs " + prev.label;
+      trendSub.className = "kpi-sub flat";
+    }
+  }
+
+  function renderInsights(rows){
+    var list = document.getElementById("insightList");
+    list.innerHTML = "";
+
+    if(rows.length === 0){
+      list.innerHTML = '<div class="insight-empty">Add monthly data to generate executive insights.</div>';
+      return;
+    }
+
+    var insights = computeInsights(rows);
+    if(insights.length === 0){
+      insights.push({icon:"📊", text:"Add at least one more month of data to unlock comparative insights."});
+    }
+
+    insights.forEach(function(item){
+      var li = document.createElement("li");
+      var iconSpan = document.createElement("span");
+      iconSpan.className = "insight-icon";
+      iconSpan.textContent = item.icon;
+      var textSpan = document.createElement("span");
+      textSpan.textContent = item.text;
+      li.appendChild(iconSpan);
+      li.appendChild(textSpan);
+      list.appendChild(li);
+    });
+  }
+
+  function computeInsights(rows){
+    var insights = [];
+    var latest = rows[rows.length-1];
+    var prev = rows.length > 1 ? rows[rows.length-2] : null;
+
+    // 1. Growth comparison (revenue vs ticket pace)
+    if(prev && latest.ticketsPct !== null && latest.gtvPct !== null){
+      var diff = latest.gtvPct - latest.ticketsPct;
+      if(diff > 15){
+        insights.push({icon:"📈", text:"Revenue grew significantly faster than ticket sales in " + latest.label + ", indicating stronger average order value."});
+      } else if(diff < -15){
+        insights.push({icon:"🎟", text:"Ticket sales grew faster than revenue in " + latest.label + ", suggesting a lower average order value."});
+      }
+    }
+
+    // 2. All-time record revenue
+    var maxGtv = Math.max.apply(null, rows.map(function(r){ return r.gtv; }));
+    var isAllTimeBest = latest.gtv === maxGtv && rows.length > 1;
+    if(isAllTimeBest){
+      var note = (latest.gtvVsTarget !== null && latest.gtvVsTarget < 100) ? "despite remaining below monthly target" : "and exceeded monthly target";
+      insights.push({icon:"🏆", text: latest.label + " recorded the highest revenue on record, " + note + "."});
+    }
+
+    // 3. Ticket target gap / achievement vs previous month
+    if(latest.ticketsVsTarget !== null){
+      if(latest.ticketsVsTarget < 100){
+        var gap = (100 - latest.ticketsVsTarget).toFixed(0);
+        if(prev && latest.ticketsPct !== null){
+          var word = latest.ticketsPct > 0 ? "improved" : "declined";
+          insights.push({icon:"🎯", text:"Ticket sales " + word + " compared to " + prev.label + " but remain " + gap + "% below the monthly target."});
+        } else {
+          insights.push({icon:"🎯", text:"Ticket sales are currently " + gap + "% below the monthly target."});
+        }
+      } else {
+        var over = (latest.ticketsVsTarget - 100).toFixed(0);
+        insights.push({icon:"✅", text:"Ticket sales exceeded the monthly target by " + over + "%."});
+      }
+    }
+
+    // 4. Annual revenue pace
+    var monthsElapsed = rows.filter(function(r){ return r.year === latest.year; }).length;
+    var expectedPace = (monthsElapsed/12*100);
+    if(latest.annualGtvPct !== null){
+      if(latest.annualGtvPct < expectedPace - 3){
+        insights.push({icon:"⚠", text:"Current pace suggests annual revenue is tracking below target for " + latest.year + " if the present trend continues."});
+      } else if(latest.annualGtvPct > expectedPace + 3){
+        insights.push({icon:"🚀", text:"Current pace suggests annual revenue is tracking ahead of target for " + latest.year + " if the present trend continues."});
+      }
+    }
+
+    // 5. Annual ticket pace
+    if(latest.annualTicketPct !== null){
+      var deltaPace = latest.annualTicketPct - expectedPace;
+      if(deltaPace < -5){
+        insights.push({icon:"📉", text:"Ticket sales are pacing " + Math.abs(deltaPace).toFixed(0) + " points behind the schedule needed to hit the annual ticket target."});
+      }
+    }
+
+    // 6. Consecutive revenue growth/decline streak
+    var streak = 0, dir = null;
+    for(var i = rows.length-1; i >= 1; i--){
+      var r = rows[i];
+      if(r.gtvPct === null) break;
+      var d = r.gtvPct > 2 ? "up" : (r.gtvPct < -2 ? "down" : "flat");
+      if(dir === null){
+        dir = d;
+        if(d === "flat") break;
+        streak = 1;
+      } else if(d === dir){
+        streak++;
+      } else break;
+    }
+    if(streak >= 2 && dir){
+      insights.push({icon: dir === "up" ? "📈" : "📉", text:"Revenue " + (dir === "up" ? "growth" : "decline") + " has continued for " + streak + " consecutive months."});
+    }
+
+    // 7. Average order value change
+    if(prev){
+      var aovLatest = latest.tickets ? latest.gtv/latest.tickets : null;
+      var aovPrev = prev.tickets ? prev.gtv/prev.tickets : null;
+      if(aovLatest !== null && aovPrev !== null && aovPrev > 0){
+        var aovPct = (aovLatest-aovPrev)/aovPrev*100;
+        if(Math.abs(aovPct) > 5){
+          insights.push({icon:"💳", text:"Average revenue per ticket " + (aovPct > 0 ? "rose" : "fell") + " to " + fmtCurrencyFull(aovLatest) + ", " + (aovPct > 0 ? "up" : "down") + " " + Math.abs(aovPct).toFixed(0) + "% from " + prev.label + "."});
+        }
+      }
+    }
+
+    // 8. Best month so far this year (only if not already covered by all-time record)
+    var thisYearRows = rows.filter(function(r){ return r.year === latest.year; });
+    if(thisYearRows.length > 1){
+      var bestThisYear = thisYearRows.reduce(function(a,b){ return b.gtv > a.gtv ? b : a; });
+      var alreadyCovered = isAllTimeBest && bestThisYear.key === latest.key;
+      if(!alreadyCovered){
+        insights.push({icon:"⭐", text: bestThisYear.label + " remains the strongest month of " + latest.year + " for revenue so far."});
+      }
+    }
+
+    return insights.slice(0,8);
+  }
+
+  function renderSummaryCards(rows){
+    var ticketPctEl = document.getElementById("annualTicketPct");
+    var ticketFillEl = document.getElementById("annualTicketFill");
+    var ticketFiguresEl = document.getElementById("annualTicketFigures");
+    var gtvPctEl = document.getElementById("annualGtvPct");
+    var gtvFillEl = document.getElementById("annualGtvFill");
+    var gtvFiguresEl = document.getElementById("annualGtvFigures");
+    var paceTicketPctEl = document.getElementById("paceTicketPct");
+    var paceTicketFillEl = document.getElementById("paceTicketFill");
+    var paceTicketFiguresEl = document.getElementById("paceTicketFigures");
+    var paceGtvPctEl = document.getElementById("paceGtvPct");
+    var paceGtvFillEl = document.getElementById("paceGtvFill");
+    var paceGtvFiguresEl = document.getElementById("paceGtvFigures");
+
+    if(rows.length === 0){
+      ticketPctEl.textContent = "0%"; ticketFillEl.style.width = "0%"; ticketFillEl.className = "summary-fill";
+      ticketFiguresEl.textContent = "0 of " + fmtInt(state.targets.annualTickets) + " tickets";
+      gtvPctEl.textContent = "0%"; gtvFillEl.style.width = "0%"; gtvFillEl.className = "summary-fill";
+      gtvFiguresEl.textContent = fmtCurrencyFull(0) + " of " + fmtCurrencyFull(state.targets.annualGtv);
+      paceTicketPctEl.textContent = "0%"; paceTicketFillEl.style.width = "0%"; paceTicketFiguresEl.textContent = "No data yet";
+      paceGtvPctEl.textContent = "0%"; paceGtvFillEl.style.width = "0%"; paceGtvFiguresEl.textContent = "No data yet";
+      return;
+    }
+
+    var latest = rows[rows.length-1];
+    var tPct = latest.annualTicketPct || 0;
+    var gPct = latest.annualGtvPct || 0;
+
+    ticketPctEl.textContent = fmtPct(tPct);
+    ticketFillEl.style.width = Math.min(100, tPct) + "%";
+    ticketFillEl.className = "summary-fill bar-" + (tPct >= 100 ? "green" : "amber");
+    ticketFiguresEl.textContent = fmtInt(latest.cumTickets) + " of " + fmtInt(state.targets.annualTickets) + " (" + latest.year + ")";
+
+    gtvPctEl.textContent = fmtPct(gPct);
+    gtvFillEl.style.width = Math.min(100, gPct) + "%";
+    gtvFillEl.className = "summary-fill bar-" + (gPct >= 100 ? "green" : "amber");
+    gtvFiguresEl.textContent = fmtCurrencyCompact(latest.cumGtv) + " of " + fmtCurrencyCompact(state.targets.annualGtv) + " (" + latest.year + ")";
+
+    var monthsElapsed = rows.filter(function(r){ return r.year === latest.year; }).length;
+    var expectedPace = monthsElapsed/12*100;
+
+    var ticketPaceDelta = tPct - expectedPace;
+    paceTicketPctEl.textContent = fmtPct(tPct);
+    paceTicketFillEl.style.width = Math.min(100, tPct) + "%";
+    paceTicketFillEl.className = "summary-fill bar-" + (ticketPaceDelta >= 0 ? "green" : "red");
+    paceTicketFiguresEl.textContent = fmtInt(latest.cumTickets) + " tickets · " + (ticketPaceDelta >= 0 ? "+" : "") + ticketPaceDelta.toFixed(1) + " pts vs expected pace";
+
+    var gtvPaceDelta = gPct - expectedPace;
+    paceGtvPctEl.textContent = fmtPct(gPct);
+    paceGtvFillEl.style.width = Math.min(100, gPct) + "%";
+    paceGtvFillEl.className = "summary-fill bar-" + (gtvPaceDelta >= 0 ? "green" : "red");
+    paceGtvFiguresEl.textContent = fmtCurrencyCompact(latest.cumGtv) + " · " + (gtvPaceDelta >= 0 ? "+" : "") + gtvPaceDelta.toFixed(1) + " pts vs expected pace";
+  }
+
+  function renderTable(rows){
+    var tbody = document.getElementById("tableBody");
+    var emptyNote = document.getElementById("tableEmptyNote");
+    tbody.innerHTML = "";
+
+    if(rows.length === 0){
+      emptyNote.style.display = "block";
+      return;
+    }
+    emptyNote.style.display = "none";
+
+    var reversed = rows.slice().reverse();
+
+    reversed.forEach(function(r){
+      var tr = document.createElement("tr");
+      tr.className = "row-" + r.trend.cls;
+
+      function cell(text, cls){
+        var td = document.createElement("td");
+        td.textContent = text;
+        if(cls) td.className = cls;
+        return td;
+      }
+
+      tr.appendChild(cell(r.label));
+      tr.appendChild(cell(fmtInt(r.tickets)));
+      tr.appendChild(cell(fmtCurrencyFull(r.gtv)));
+      tr.appendChild(cell(r.ticketsDelta===null?"—":fmtSignedInt(r.ticketsDelta), r.ticketsDelta>0?"up":(r.ticketsDelta<0?"down":"flat")));
+      tr.appendChild(cell(r.gtvDelta===null?"—":"UGX "+fmtSignedInt(r.gtvDelta), r.gtvDelta>0?"up":(r.gtvDelta<0?"down":"flat")));
+      tr.appendChild(cell(r.ticketsVsTarget===null?"—":fmtPct(r.ticketsVsTarget)));
+      tr.appendChild(cell(r.gtvVsTarget===null?"—":fmtPct(r.gtvVsTarget)));
+      tr.appendChild(cell(r.trend.sym, r.trend.cls));
+
+      tbody.appendChild(tr);
+    });
+  }
+
+  // ---------- Compare Months ----------
+  function populateCompareSelects(){
+    var rows = computeRows();
+    var selA = document.getElementById("compareMonthA");
+    var selB = document.getElementById("compareMonthB");
+    selA.innerHTML = "";
+    selB.innerHTML = "";
+    rows.forEach(function(r){
+      var optA = document.createElement("option");
+      optA.value = r.key; optA.textContent = r.label;
+      selA.appendChild(optA);
+      var optB = document.createElement("option");
+      optB.value = r.key; optB.textContent = r.label;
+      selB.appendChild(optB);
+    });
+    if(rows.length >= 2){
+      selA.value = rows[rows.length-2].key;
+      selB.value = rows[rows.length-1].key;
+    } else if(rows.length === 1){
+      selA.value = rows[0].key;
+      selB.value = rows[0].key;
+    }
+  }
+
+  function openCompareModal(){
+    var rows = computeRows();
+    if(rows.length < 2){
+      document.getElementById("compareResult").innerHTML = '<p style="font-size:12.5px;color:var(--gray-500);">Add at least two months of data to compare.</p>';
+    }
+    populateCompareSelects();
+    renderCompareTable();
+    document.getElementById("compareModalOverlay").classList.add("open");
+  }
+
+  function closeCompareModal(){
+    document.getElementById("compareModalOverlay").classList.remove("open");
+  }
+
+  function compareRow(labelText, valA, valB, deltaText){
+    return '<tr><td>'+labelText+'</td><td>'+valA+'</td><td>'+valB+'</td><td>'+deltaText+'</td></tr>';
+  }
+
+  function renderCompareTable(){
+    var rows = computeRows();
+    if(rows.length < 2) return;
+
+    var keyA = document.getElementById("compareMonthA").value;
+    var keyB = document.getElementById("compareMonthB").value;
+    var container = document.getElementById("compareResult");
+
+    var rowA = rows.find(function(r){ return r.key === keyA; });
+    var rowB = rows.find(function(r){ return r.key === keyB; });
+
+    if(!rowA || !rowB){
+      container.innerHTML = '<p style="font-size:12.5px;color:var(--gray-500);">Select two months to compare.</p>';
+      return;
+    }
+    if(keyA === keyB){
+      container.innerHTML = '<p style="font-size:12.5px;color:var(--gray-500);">Please choose two different months.</p>';
+      return;
+    }
+
+    var ticketsDelta = rowB.tickets - rowA.tickets;
+    var ticketsPct = rowA.tickets ? (ticketsDelta/rowA.tickets*100) : null;
+    var gtvDelta = rowB.gtv - rowA.gtv;
+    var gtvPct = rowA.gtv ? (gtvDelta/rowA.gtv*100) : null;
+
+    var html = '<table class="compare-table"><thead><tr><th>Metric</th><th>'+rowA.label+'</th><th>'+rowB.label+'</th><th>Δ (B − A)</th></tr></thead><tbody>';
+    html += compareRow("Tickets Sold", fmtInt(rowA.tickets), fmtInt(rowB.tickets), fmtSignedInt(ticketsDelta) + (ticketsPct!==null? " ("+fmtSignedPct(ticketsPct)+")" : ""));
+    html += compareRow("Revenue (GTV)", fmtCurrencyFull(rowA.gtv), fmtCurrencyFull(rowB.gtv), "UGX "+fmtSignedInt(gtvDelta) + (gtvPct!==null? " ("+fmtSignedPct(gtvPct)+")" : ""));
+    html += compareRow("Tickets vs Monthly Target", rowA.ticketsVsTarget===null?"—":fmtPct(rowA.ticketsVsTarget), rowB.ticketsVsTarget===null?"—":fmtPct(rowB.ticketsVsTarget), (rowA.ticketsVsTarget!==null && rowB.ticketsVsTarget!==null) ? fmtSignedPct(rowB.ticketsVsTarget-rowA.ticketsVsTarget) : "—");
+    html += compareRow("Revenue vs Monthly Target", rowA.gtvVsTarget===null?"—":fmtPct(rowA.gtvVsTarget), rowB.gtvVsTarget===null?"—":fmtPct(rowB.gtvVsTarget), (rowA.gtvVsTarget!==null && rowB.gtvVsTarget!==null) ? fmtSignedPct(rowB.gtvVsTarget-rowA.gtvVsTarget) : "—");
+    html += compareRow("Cumulative Tickets ("+rowA.year+" / "+rowB.year+")", fmtInt(rowA.cumTickets), fmtInt(rowB.cumTickets), "—");
+    html += compareRow("Cumulative Revenue ("+rowA.year+" / "+rowB.year+")", fmtCurrencyFull(rowA.cumGtv), fmtCurrencyFull(rowB.cumGtv), "—");
+    html += compareRow("Annual Ticket %", rowA.annualTicketPct===null?"—":fmtPct(rowA.annualTicketPct), rowB.annualTicketPct===null?"—":fmtPct(rowB.annualTicketPct), "—");
+    html += compareRow("Annual Revenue %", rowA.annualGtvPct===null?"—":fmtPct(rowA.annualGtvPct), rowB.annualGtvPct===null?"—":fmtPct(rowB.annualGtvPct), "—");
+    html += compareRow("Trend", rowA.trend.sym, rowB.trend.sym, gtvDelta > 0 ? (rowB.label+" ahead on revenue") : (gtvDelta < 0 ? (rowA.label+" ahead on revenue") : "Even"));
+    html += "</tbody></table>";
+
+    container.innerHTML = html;
+  }
+
+  // ---------- Export as Image (pure canvas + SVG foreignObject, no external libs) ----------
+  function exportImage(){
+    var target = document.querySelector(".main-content");
+    var styleEl = document.querySelector("style");
+    var css = styleEl ? styleEl.textContent : "";
+    var w = target.offsetWidth || 1200;
+    var h = target.scrollHeight || 800;
+
+    var clone = target.cloneNode(true);
+    clone.style.height = "auto";
+    clone.style.overflow = "visible";
+    var htmlStr = new XMLSerializer().serializeToString(clone);
+
+    var svgStr = '<svg xmlns="http://www.w3.org/2000/svg" width="'+w+'" height="'+h+'">' +
+      '<foreignObject width="100%" height="100%">' +
+      '<div xmlns="http://www.w3.org/1999/xhtml"><style>'+css+'</style>'+htmlStr+'</div>' +
+      '</foreignObject></svg>';
+
+    var blob = new Blob([svgStr], {type:"image/svg+xml;charset=utf-8"});
+    var url = URL.createObjectURL(blob);
+    var img = new Image();
+
+    img.onload = function(){
+      var scale = 2;
+      var canvas = document.createElement("canvas");
+      canvas.width = w*scale;
+      canvas.height = h*scale;
+      var ctx = canvas.getContext("2d");
+      ctx.fillStyle = "#f6f8fb";
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+      ctx.drawImage(img, 0, 0, w*scale, h*scale);
+      URL.revokeObjectURL(url);
+
+      canvas.toBlob(function(pngBlob){
+        if(!pngBlob){
+          alert("Could not generate the image in this browser. Try opening the file directly in a Chromium-based browser.");
+          return;
+        }
+        var pngUrl = URL.createObjectURL(pngBlob);
+        var a = document.createElement("a");
+        var today = new Date().toISOString().slice(0,10);
+        a.href = pngUrl;
+        a.download = "quicket_performance_" + today + ".png";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(function(){ URL.revokeObjectURL(pngUrl); }, 1000);
+      }, "image/png");
+    };
+
+    img.onerror = function(){
+      alert("Could not generate the image in this browser. Try opening the file directly in a Chromium-based browser.");
+      URL.revokeObjectURL(url);
+    };
+
+    img.src = url;
+  }
+
+  // ---------- Event wiring ----------
+  document.getElementById("refreshDataBtn").addEventListener("click", function(){ loadFromSheet(false); });
+
+  // Quiet text links to the two source Sheets, not buttons — real hrefs so right-click,
+  // cmd/ctrl-click, etc. all just work.
+  document.getElementById("openMonthsSheetLink").href = sheetEditUrl(MONTHS_SPREADSHEET_ID);
+  document.getElementById("openTargetsSheetLink").href = sheetEditUrl(TARGETS_SPREADSHEET_ID);
+
+  document.getElementById("compareMonthsBtn").addEventListener("click", openCompareModal);
+  document.getElementById("compareCloseBtn").addEventListener("click", closeCompareModal);
+  document.getElementById("compareMonthA").addEventListener("change", renderCompareTable);
+  document.getElementById("compareMonthB").addEventListener("change", renderCompareTable);
+
+  document.getElementById("saveImageBtn").addEventListener("click", exportImage);
+  document.getElementById("analyticsToggleBtn").addEventListener("click", toggleAnalytics);
+
+  document.getElementById("compareModalOverlay").addEventListener("click", function(e){
+    if(e.target === e.currentTarget){ e.currentTarget.classList.remove("open"); }
+  });
+
+  // Initial load, then keep the page fresh automatically for anyone who leaves it open.
+  loadFromSheet(false);
+  setInterval(function(){ loadFromSheet(true); }, AUTO_REFRESH_MS);
+
+  // Also refresh the moment someone switches back to this tab/embed — covers the common
+  // case of "edit the Sheet, then tab back to Notion" without waiting for the timer.
+  document.addEventListener("visibilitychange", function(){
+    if(document.visibilityState === "visible") loadFromSheet(true);
+  });
+  window.addEventListener("focus", function(){ loadFromSheet(true); });
+})();
+</script>
+</body>
+</html>
