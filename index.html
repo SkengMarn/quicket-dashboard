@@ -129,7 +129,7 @@
     gap:14px;
     padding:18px 22px 20px;
     height:100vh;
-    overflow:hidden;
+    overflow-y:auto;
   }
 
   /* ---------- ROW 1: HEADER ---------- */
@@ -371,14 +371,21 @@
     color:var(--gray-500);
   }
 
-  /* ---------- ROW 4: TABLE ---------- */
+  /* ---------- ROW 4: TABLE + TOP EVENTS ---------- */
+  .row-4{
+    display:grid;
+    grid-template-columns:repeat(12,1fr);
+    gap:14px;
+    flex:1 1 auto;
+    min-height:0;
+  }
   .table-section{
+    grid-column:span 8;
     background:#fff;
     border:1px solid var(--gray-100);
     border-radius:var(--radius);
     padding:14px 18px 6px;
     box-shadow:var(--shadow);
-    flex:1 1 auto;
     min-height:150px;
     display:flex;
     flex-direction:column;
@@ -388,6 +395,105 @@
     flex:1;
     min-height:0;
     margin-top:10px;
+  }
+
+  .top-events-panel{
+    grid-column:span 4;
+    background:#fff;
+    border:1px solid var(--gray-100);
+    border-radius:var(--radius);
+    padding:14px 18px;
+    box-shadow:var(--shadow);
+    min-height:150px;
+    display:flex;
+    flex-direction:column;
+    min-height:0;
+  }
+  .panel-subtitle{
+    font-weight:600;
+    text-transform:none;
+    letter-spacing:0;
+    color:var(--gray-500);
+  }
+  .top-events-list{
+    margin-top:8px;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    overflow-y:auto;
+    min-height:0;
+  }
+  .event-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .event-rank{
+    flex:0 0 auto;
+    width:18px;
+    height:18px;
+    border-radius:50%;
+    background:var(--gray-100);
+    color:var(--gray-700);
+    font-size:10px;
+    font-weight:800;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .event-info{
+    flex:1 1 auto;
+    min-width:0;
+  }
+  .event-name{
+    font-size:12px;
+    font-weight:700;
+    color:var(--gray-900);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .event-sub{
+    font-size:10px;
+    color:var(--gray-500);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .event-revenue{
+    flex:0 0 auto;
+    font-size:11.5px;
+    font-weight:800;
+    color:var(--gray-900);
+    white-space:nowrap;
+  }
+
+  /* ---------- EVENT BAR CHARTS (Detailed Analytics) ---------- */
+  .ebar-chart{ display:flex; flex-direction:column; gap:8px; }
+  .ebar-row{ display:flex; align-items:center; gap:8px; }
+  .ebar-label{
+    flex:0 0 130px;
+    font-size:10.5px;
+    color:var(--gray-700);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .ebar-track{
+    flex:1 1 auto;
+    height:9px;
+    border-radius:5px;
+    background:var(--gray-100);
+    overflow:hidden;
+  }
+  .ebar-fill{ height:100%; border-radius:5px; }
+  .ebar-value{
+    flex:0 0 auto;
+    width:70px;
+    text-align:right;
+    font-size:10.5px;
+    font-weight:700;
+    color:var(--gray-900);
   }
   table{
     width:100%;
@@ -840,26 +946,34 @@
       </div>
     </section>
 
-    <!-- ROW 4: PERFORMANCE TABLE -->
-    <section class="table-section">
-      <div class="panel-title">Monthly Performance</div>
-      <div class="table-scroll">
-        <table>
-          <thead>
-            <tr>
-              <th>Month</th>
-              <th>Tickets</th>
-              <th>Revenue</th>
-              <th>Ticket Δ</th>
-              <th>Revenue Δ</th>
-              <th>Ticket Target %</th>
-              <th>Revenue Target %</th>
-              <th>Trend</th>
-            </tr>
-          </thead>
-          <tbody id="tableBody"></tbody>
-        </table>
-        <div class="empty-note" id="tableEmptyNote" style="display:none;">No monthly data yet. Add rows to the Google Sheet, then click "Refresh Data".</div>
+    <!-- ROW 4: PERFORMANCE TABLE + TOP EVENTS -->
+    <section class="row-4">
+      <div class="table-section">
+        <div class="panel-title">Monthly Performance</div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Month</th>
+                <th>Tickets</th>
+                <th>Revenue</th>
+                <th>Ticket Δ</th>
+                <th>Revenue Δ</th>
+                <th>Ticket Target %</th>
+                <th>Revenue Target %</th>
+                <th>Trend</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+          <div class="empty-note" id="tableEmptyNote" style="display:none;">No monthly data yet. Add rows to the Google Sheet, then click "Refresh Data".</div>
+        </div>
+      </div>
+
+      <div class="top-events-panel">
+        <div class="panel-title">Top Events <span class="panel-subtitle" id="topEventsMonthLabel"></span></div>
+        <div class="top-events-list" id="topEventsList"></div>
+        <div class="empty-note" id="topEventsEmptyNote" style="display:none;">No event data yet for this month. Add an "Events &lt;Mon&gt; &lt;Year&gt;" tab to the Months sheet.</div>
       </div>
     </section>
 
@@ -935,8 +1049,15 @@
   var state = {
     targets: JSON.parse(JSON.stringify(defaultTargets)),
     months: [],
-    lastUpdated: null
+    lastUpdated: null,
+    events: [],
+    eventsMonthKey: null,
+    eventsTabName: null
   };
+
+  function escapeHtml(s){
+    return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
 
   function sheetCsvUrl(spreadsheetId, tabName){
     return "https://docs.google.com/spreadsheets/d/" + spreadsheetId +
@@ -1014,12 +1135,41 @@
     return targets;
   }
 
+  // Parses an "Events <Mon> <Year>" tab: Event Id, Event Name, Tickets Issued,
+  // Tickets Issued (free), Tickets Issued (paid), POS Tickets Issued, Orders,
+  // FaceValue(UGX), Revenue(UGX). Skips the header row and the trailing Totals row.
+  function parseEventsRows(csvRows){
+    var events = [];
+    for(var i = 1; i < csvRows.length; i++){
+      var row = csvRows[i];
+      if(!row || row.length === 0) continue;
+      var name = (row[1] || "").trim();
+      if(!name) continue;
+      if(name.toLowerCase() === "totals") continue;
+      events.push({
+        id: (row[0] || "").trim(),
+        name: name,
+        tickets: parseNumber(row[2]) || 0,
+        free: parseNumber(row[3]) || 0,
+        paid: parseNumber(row[4]) || 0,
+        pos: parseNumber(row[5]) || 0,
+        orders: parseNumber(row[6]) || 0,
+        faceValue: parseNumber(row[7]) || 0,
+        revenue: parseNumber(row[8]) || 0
+      });
+    }
+    return events;
+  }
+
   function saveCache(){
     try{
       localStorage.setItem(CACHE_KEY, JSON.stringify({
         targets: state.targets,
         months: state.months,
-        lastUpdated: state.lastUpdated
+        lastUpdated: state.lastUpdated,
+        events: state.events,
+        eventsMonthKey: state.eventsMonthKey,
+        eventsTabName: state.eventsTabName
       }));
     }catch(e){ /* ignore quota errors */ }
   }
@@ -1062,15 +1212,48 @@
       state.months = parseMonthsRows(monthsRows);
       state.targets = parseTargetsRows(targetsRows, defaultTargets);
       state.lastUpdated = new Date().toISOString();
-      saveCache();
       hideBanner();
-      render();
+
+      // Event-level detail lives in its own tab per month, named e.g. "Events Jul 2026",
+      // inside the same Months spreadsheet. It's optional — if the latest month doesn't
+      // have one yet (or it 404s), we just show an empty state instead of failing the load.
+      var sortedMonths = state.months.slice().sort(function(a,b){
+        return a.month < b.month ? -1 : (a.month > b.month ? 1 : 0);
+      });
+      var latestMonthKey = sortedMonths.length ? sortedMonths[sortedMonths.length-1].month : null;
+
+      if(!latestMonthKey){
+        state.events = []; state.eventsMonthKey = null; state.eventsTabName = null;
+        saveCache();
+        render();
+        return;
+      }
+
+      var tabName = "Events " + monthLabel(latestMonthKey);
+      state.eventsMonthKey = latestMonthKey;
+      state.eventsTabName = tabName;
+
+      return fetch(sheetCsvUrl(MONTHS_SPREADSHEET_ID, tabName)).then(function(r){
+        if(!r.ok) throw new Error("no events tab for " + tabName);
+        return r.text();
+      }).then(function(text){
+        state.events = parseEventsRows(parseCSV(text));
+        saveCache();
+        render();
+      }).catch(function(){
+        state.events = [];
+        saveCache();
+        render();
+      });
     }).catch(function(err){
       var cached = loadCache();
       if(cached){
         state.targets = cached.targets;
         state.months = cached.months;
         state.lastUpdated = cached.lastUpdated;
+        state.events = cached.events || [];
+        state.eventsMonthKey = cached.eventsMonthKey || null;
+        state.eventsTabName = cached.eventsTabName || null;
         showBanner("stale", "⚠ Could not refresh from the Sheet just now (" + err.message + "). Showing the last saved data instead.");
       } else {
         showBanner("error", "⚠ Could not load data from the Google Sheets. " + err.message + ' Make sure both the Months and Targets sheets are shared as "Anyone with the link – Viewer".');
@@ -1432,15 +1615,88 @@
       '</div>';
   }
 
+  // Horizontal bar list (HTML/CSS, not SVG) — reads better than a bar chart for
+  // long event names, since labels sit to the left of each bar.
+  function buildEventsBarHTML(events, key, color, fmtFn, limit){
+    limit = limit || 8;
+    var top = events.slice().sort(function(a,b){ return b[key]-a[key]; }).slice(0, limit);
+    if(top.length === 0) return '<div class="chart-empty">Not enough data yet.</div>';
+    var maxVal = top[0][key] || 1;
+    if(maxVal <= 0) maxVal = 1;
+    var rowsHtml = top.map(function(e){
+      var pct = Math.max(2, (e[key]/maxVal)*100);
+      return '<div class="ebar-row">' +
+        '<div class="ebar-label" title="'+escapeHtml(e.name)+'">'+escapeHtml(e.name)+'</div>' +
+        '<div class="ebar-track"><div class="ebar-fill" style="width:'+pct+'%;background:'+color+';"></div></div>' +
+        '<div class="ebar-value">'+fmtFn(e[key])+'</div>' +
+      '</div>';
+    }).join("");
+    return '<div class="ebar-chart">'+rowsHtml+'</div>';
+  }
+
+  // Donut of top N events by a metric, with the long tail grouped into "Other events".
+  function buildEventDonutHTML(events, key, limit){
+    limit = limit || 6;
+    var sorted = events.slice().sort(function(a,b){ return b[key]-a[key]; });
+    var total = sorted.reduce(function(s,e){ return s+e[key]; }, 0);
+    if(total <= 0) return '<div class="chart-empty">Not enough data yet.</div>';
+    var top = sorted.slice(0, limit);
+    var restSum = sorted.slice(limit).reduce(function(s,e){ return s+e[key]; }, 0);
+    var items = top.map(function(e){ return { label: e.name, value: e[key] }; });
+    if(restSum > 0) items.push({ label: "Other events", value: restSum });
+
+    var acc = 0;
+    var stops = items.map(function(it,i){
+      var pct = it.value/total*100;
+      var start = acc; acc += pct;
+      return paletteColor(i) + " " + start.toFixed(2) + "% " + acc.toFixed(2) + "%";
+    }).join(", ");
+    var legend = items.map(function(it,i){
+      var pct = (it.value/total*100).toFixed(1);
+      return '<div class="row"><span style="background:'+paletteColor(i)+';width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0;"></span>' +
+        escapeHtml(it.label) + " — " + pct + "%" + '</div>';
+    }).join("");
+    return '<div class="donut-wrap">' +
+      '<div class="donut" style="background:conic-gradient(' + stops + ');"></div>' +
+      '<div class="donut-legend">' + legend + '</div>' +
+      '</div>';
+  }
+
+  // Full sortable-by-revenue table of every event recorded for the month.
+  function buildEventsTableHTML(events){
+    var sorted = events.slice().sort(function(a,b){ return b.revenue-a.revenue; });
+    var totalRevenue = sorted.reduce(function(s,e){ return s+e.revenue; }, 0) || 1;
+    var rowsHtml = sorted.map(function(e){
+      var pct = (e.revenue/totalRevenue*100).toFixed(1);
+      return '<tr>' +
+        '<td>'+escapeHtml(e.name)+'</td>' +
+        '<td>'+fmtInt(e.tickets)+'</td>' +
+        '<td>'+fmtInt(e.free)+'</td>' +
+        '<td>'+fmtInt(e.paid)+'</td>' +
+        '<td>'+fmtInt(e.orders)+'</td>' +
+        '<td>'+fmtCurrencyFull(e.faceValue)+'</td>' +
+        '<td>'+fmtCurrencyFull(e.revenue)+'</td>' +
+        '<td>'+pct+'%</td>' +
+      '</tr>';
+    }).join("");
+    return '<div class="table-scroll" style="max-height:260px;">' +
+      '<table><thead><tr>' +
+        '<th>Event</th><th>Tickets</th><th>Free</th><th>Paid</th><th>Orders</th><th>Face Value</th><th>Revenue</th><th>% Rev</th>' +
+      '</tr></thead><tbody>' + rowsHtml + '</tbody></table>' +
+    '</div>';
+  }
+
   function renderAnalytics(rows){
     var grid = document.getElementById("analyticsGrid");
+    var html = "";
+
     if(rows.length < 2){
-      grid.innerHTML = '<div class="chart-card full"><div class="chart-empty">Add at least two months of data to unlock detailed analytics.</div></div>';
+      html += '<div class="chart-card full"><div class="chart-empty">Add at least two months of data to unlock monthly trend analytics.</div></div>';
+      grid.innerHTML = html + renderEventAnalyticsHtml();
       return;
     }
 
     var year = getTrackingYear(rows);
-    var html = "";
 
     // 1. Monthly Tickets vs Revenue
     html += chartCard(
@@ -1512,7 +1768,48 @@
       );
     }
 
-    grid.innerHTML = html;
+    grid.innerHTML = html + renderEventAnalyticsHtml();
+  }
+
+  // Event-level analytics for the latest month — independent of how many months
+  // of Tickets/GTV history exist, since it only needs one month's Events tab.
+  function renderEventAnalyticsHtml(){
+    if(!state.eventsMonthKey){
+      return "";
+    }
+    var label = monthLabel(state.eventsMonthKey);
+    if(!state.events || state.events.length === 0){
+      return chartCard(
+        "Event Breakdown (" + label + ")",
+        "No event data found",
+        '<div class="chart-empty">Add an "Events ' + label + '" tab to the Months sheet with this month\'s event rows.</div>',
+        "full"
+      );
+    }
+
+    var html = "";
+    html += chartCard(
+      "Top Events by Revenue (" + label + ")",
+      "Highest-grossing events this month",
+      buildEventsBarHTML(state.events, "revenue", "#15803d", fmtCurrencyCompact)
+    );
+    html += chartCard(
+      "Top Events by Tickets Sold (" + label + ")",
+      "Highest ticket volume events this month",
+      buildEventsBarHTML(state.events, "tickets", "#1d4ed8", fmtInt)
+    );
+    html += chartCard(
+      "Event Revenue Share",
+      "Share of this month's revenue by event (top 6, rest grouped as Other)",
+      buildEventDonutHTML(state.events, "revenue")
+    );
+    html += chartCard(
+      "Event Breakdown (" + label + ")",
+      "All events recorded for this month, sorted by revenue",
+      buildEventsTableHTML(state.events),
+      "full"
+    );
+    return html;
   }
 
   var analyticsRendered = false;
@@ -1549,6 +1846,7 @@
     renderInsights(rows);
     renderSummaryCards(rows);
     renderTable(rows);
+    renderTopEvents();
     renderAnalytics(rows);
 
     // Keep an already-open analytics panel correctly sized if the underlying data changes
@@ -1905,6 +2203,37 @@
 
       tbody.appendChild(tr);
     });
+  }
+
+  // ---------- Top Events (main view) ----------
+  function renderTopEvents(){
+    var listEl = document.getElementById("topEventsList");
+    var emptyEl = document.getElementById("topEventsEmptyNote");
+    var labelEl = document.getElementById("topEventsMonthLabel");
+
+    labelEl.textContent = state.eventsMonthKey ? ("— " + monthLabel(state.eventsMonthKey)) : "";
+
+    if(!state.events || state.events.length === 0){
+      listEl.innerHTML = "";
+      emptyEl.style.display = "block";
+      return;
+    }
+    emptyEl.style.display = "none";
+
+    var totalRevenue = state.events.reduce(function(s,e){ return s + e.revenue; }, 0);
+    var top = state.events.slice().sort(function(a,b){ return b.revenue - a.revenue; }).slice(0,5);
+
+    listEl.innerHTML = top.map(function(e,i){
+      var pct = totalRevenue > 0 ? (e.revenue/totalRevenue*100) : 0;
+      return '<div class="event-row">' +
+        '<div class="event-rank">'+(i+1)+'</div>' +
+        '<div class="event-info">' +
+          '<div class="event-name" title="'+escapeHtml(e.name)+'">'+escapeHtml(e.name)+'</div>' +
+          '<div class="event-sub">'+fmtInt(e.tickets)+' tickets · '+fmtPct(pct,0)+' of month revenue</div>' +
+        '</div>' +
+        '<div class="event-revenue">'+fmtCurrencyCompact(e.revenue)+'</div>' +
+      '</div>';
+    }).join("");
   }
 
   // ---------- Compare Months ----------
