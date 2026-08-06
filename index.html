@@ -1460,20 +1460,26 @@
   // living in the "Targets" Drive folder. Each Sheet must be shared
   // as "Anyone with the link – Viewer" for this page to read it.
   // ============================================================
+  // Both countries now share the same two spreadsheets: one "Months" file
+  // (monthly summary tab + one Events tab per country per month) and one
+  // "Targets" file (one tab per country). monthsId/targetsId intentionally
+  // match between UG and KE below — only the tab names differ.
   var COUNTRIES = {
     UG: {
       id: "UG", name: "Uganda", currency: "UGX",
       monthsId: "1Tgxk127qWCHjI92jg9Hg_W0RlhavBnevDjITcvbDF2w",
       targetsId: "17Qut6VdywgCycvzM6ai6hjLWClEvrF8lam5YmcH_HFI",
+      // NOTE: confirmed live tab name is still "Untitled" (the original default).
+      // Update this line if/when it's renamed to something like MONTHS_SHEET_TAB_UG.
       monthsTab: "Untitled", targetsTab: "TARGETS_SHEET_TAB_UG"
     },
     KE: {
       id: "KE", name: "Kenya", currency: "KES",
-      monthsId: "1faH-wUlVNyeTxnq99BCRdUOIdP9fxGnIJ_10obKY8YI",
-      // Targets now live as a second tab in the same spreadsheet as Uganda's,
-      // not a separate file — targetsId intentionally matches UG's above.
+      monthsId: "1Tgxk127qWCHjI92jg9Hg_W0RlhavBnevDjITcvbDF2w",
       targetsId: "17Qut6VdywgCycvzM6ai6hjLWClEvrF8lam5YmcH_HFI",
-      monthsTab: "Untitled", targetsTab: "TARGETS_SHEET_TAB_KE"
+      // Expects a tab named exactly "MONTHS_SHEET_TAB_KE" — doesn't exist yet.
+      // Until it's added, Kenya/East Africa views show a "not available" banner.
+      monthsTab: "MONTHS_SHEET_TAB_KE", targetsTab: "TARGETS_SHEET_TAB_KE"
     }
   };
   // Fallback FX rate (1 KES in UGX) for the combined "East Africa" view — only used
@@ -1710,7 +1716,8 @@
         var latestMonthKey = sortedMonths.length ? sortedMonths[sortedMonths.length-1].month : null;
         if(!latestMonthKey) return data;
 
-        var tabName = "Events " + monthLabel(latestMonthKey);
+        // Events tabs are named per country per month, e.g. "Events Jul 2026 UG".
+        var tabName = "Events " + monthLabel(latestMonthKey) + " " + country.id;
         data.eventsMonthKey = latestMonthKey;
         data.eventsTabName = tabName;
 
