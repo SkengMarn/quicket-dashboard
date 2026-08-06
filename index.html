@@ -153,6 +153,32 @@
     color:var(--gray-500);
     font-weight:600;
   }
+  .country-toggle{
+    display:inline-flex;
+    gap:2px;
+    margin-top:8px;
+    background:var(--gray-50);
+    border:1px solid var(--gray-100);
+    border-radius:9px;
+    padding:2px;
+  }
+  .country-toggle-btn{
+    border:none;
+    background:transparent;
+    font-size:11px;
+    font-weight:700;
+    color:var(--gray-500);
+    padding:5px 11px;
+    border-radius:7px;
+    cursor:pointer;
+    transition:background .15s, color .15s;
+  }
+  .country-toggle-btn:hover{ color:var(--gray-900); }
+  .country-toggle-btn.active{
+    background:#fff;
+    color:var(--blue);
+    box-shadow:var(--shadow);
+  }
   .header-stats{
     display:flex;
     gap:22px;
@@ -1194,6 +1220,11 @@
       <div class="header-left">
         <h1>Quicket Uganda Performance</h1>
         <p class="header-subtitle">Executive performance dashboard</p>
+        <div class="country-toggle" id="countryToggle" role="tablist" aria-label="Country view">
+          <button class="country-toggle-btn active" data-country="UG" type="button">Uganda</button>
+          <button class="country-toggle-btn" data-country="KE" type="button">Kenya</button>
+          <button class="country-toggle-btn" data-country="BOTH" type="button">East Africa</button>
+        </div>
       </div>
       <div class="header-stats">
         <div class="header-stat tt-point" data-tt="The date range currently covered by the Months sheet — automatically the earliest to latest month you've added. No need to set this manually.">
@@ -1425,19 +1456,30 @@
   "use strict";
 
   // ============================================================
-  // CONFIG — these point at the two Google Sheets living in the
-  // "Targets" Drive folder. Each Sheet must be shared as
-  // "Anyone with the link – Viewer" for this page to read it.
+  // CONFIG — each country points at its own pair of Google Sheets
+  // living in the "Targets" Drive folder. Each Sheet must be shared
+  // as "Anyone with the link – Viewer" for this page to read it.
   // ============================================================
-  var MONTHS_SPREADSHEET_ID = "1Tgxk127qWCHjI92jg9Hg_W0RlhavBnevDjITcvbDF2w";
-  var TARGETS_SPREADSHEET_ID = "17Qut6VdywgCycvzM6ai6hjLWClEvrF8lam5YmcH_HFI";
-  // Both Sheets' tabs are currently named "Untitled" (the default Google Sheets gives
-  // a tab when a CSV is converted). If you rename either tab yourself, update the
-  // matching line below to the new name — that's the only change needed.
-  var MONTHS_SHEET_TAB = "Untitled";
-  var TARGETS_SHEET_TAB = "Untitled";
+  var COUNTRIES = {
+    UG: {
+      id: "UG", name: "Uganda", currency: "UGX",
+      monthsId: "1Tgxk127qWCHjI92jg9Hg_W0RlhavBnevDjITcvbDF2w",
+      targetsId: "17Qut6VdywgCycvzM6ai6hjLWClEvrF8lam5YmcH_HFI",
+      monthsTab: "Untitled", targetsTab: "Untitled"
+    },
+    KE: {
+      id: "KE", name: "Kenya", currency: "KES",
+      monthsId: "1faH-wUlVNyeTxnq99BCRdUOIdP9fxGnIJ_10obKY8YI",
+      targetsId: "1L3Z0MKrskRDVN1p9RaLSGNlsSE5OBVUP4vK_iWEnMP8",
+      monthsTab: "Untitled", targetsTab: "Untitled"
+    }
+  };
+  // Fallback FX rate (1 KES in UGX) for the combined "East Africa" view — only used
+  // if the Kenya Targets sheet doesn't have a "fxKesToUgx" row. Add/update that row
+  // in the Kenya Targets sheet any time to change this without touching code.
+  var DEFAULT_FX_KES_TO_UGX = 29.03;
 
-  var CACHE_KEY = "quicketPerfDashboard_cache_v1";
+  var CACHE_KEY = "quicketPerfDashboard_cache_v2";
   var AUTO_REFRESH_MS = 5 * 60 * 1000; // re-check the Sheet every 5 minutes
 
   var defaultTargets = {
@@ -1446,8 +1488,28 @@
     monthlyTickets: 14250,
     monthlyGtv: 646666667
   };
+  var zeroTargets = { annualTickets: 0, annualGtv: 0, monthlyTickets: 0, monthlyGtv: 0 };
+
+  function emptyCountryData(fallbackTargets){
+    return {
+      targets: JSON.parse(JSON.stringify(fallbackTargets)),
+      months: [], events: [], eventsMonthKey: null, eventsTabName: null,
+      lastUpdated: null, loadError: null
+    };
+  }
 
   var state = {
+    activeView: "UG", // "UG" | "KE" | "BOTH"
+    fxKesToUgx: DEFAULT_FX_KES_TO_UGX,
+    raw: {
+      UG: emptyCountryData(defaultTargets),
+      KE: emptyCountryData(zeroTargets)
+    },
+    // ---- Active/display dataset. Every render function below reads from these
+    // fields exactly as before — applyActiveView() populates them from state.raw
+    // based on state.activeView, so nothing downstream needs to know this page
+    // now covers more than one country. ----
+    currency: "UGX",
     targets: JSON.parse(JSON.stringify(defaultTargets)),
     months: [],
     lastUpdated: null,
@@ -1536,9 +1598,26 @@
     return targets;
   }
 
+  // Looks for a "fxKesToUgx" row in a Targets sheet (Kenya's) and returns its value,
+  // or the fallback if it isn't there yet. Lets the FX rate be updated by editing the
+  // Sheet directly, same as every other target value.
+  function extractFxRate(csvRows, fallback){
+    for(var i = 1; i < csvRows.length; i++){
+      var row = csvRows[i];
+      if(!row || row.length < 2) continue;
+      var rawKey = (row[0] || "").trim().toLowerCase().replace(/[^a-z]/g, "");
+      if(rawKey === "fxkestougx"){
+        var val = parseNumber(row[1]);
+        if(!isNaN(val) && val > 0) return val;
+      }
+    }
+    return fallback;
+  }
+
   // Parses an "Events <Mon> <Year>" tab: Event Id, Event Name, Tickets Issued,
   // Tickets Issued (free), Tickets Issued (paid), POS Tickets Issued, Orders,
-  // FaceValue(UGX), Revenue(UGX). Skips the header row and the trailing Totals row.
+  // Face Value, Revenue, and optionally Event Start Date, Event Category, City.
+  // Skips the header row and the trailing Totals row.
   function parseEventsRows(csvRows){
     var events = [];
     for(var i = 1; i < csvRows.length; i++){
@@ -1556,7 +1635,10 @@
         pos: parseNumber(row[5]) || 0,
         orders: parseNumber(row[6]) || 0,
         faceValue: parseNumber(row[7]) || 0,
-        revenue: parseNumber(row[8]) || 0
+        revenue: parseNumber(row[8]) || 0,
+        date: (row[9] || "").trim(),
+        category: (row[10] || "").trim(),
+        city: (row[11] || "").trim()
       });
     }
     return events;
@@ -1565,12 +1647,9 @@
   function saveCache(){
     try{
       localStorage.setItem(CACHE_KEY, JSON.stringify({
-        targets: state.targets,
-        months: state.months,
-        lastUpdated: state.lastUpdated,
-        events: state.events,
-        eventsMonthKey: state.eventsMonthKey,
-        eventsTabName: state.eventsTabName
+        raw: state.raw,
+        fxKesToUgx: state.fxKesToUgx,
+        activeView: state.activeView
       }));
     }catch(e){ /* ignore quota errors */ }
   }
@@ -1595,69 +1674,194 @@
     el.style.display = "none";
   }
 
+  // Loads one country's Months + Targets + latest Events tab. Always resolves
+  // (never rejects) with a data object — a failure just leaves that country's
+  // loadError set, so one country going down never breaks the other's view.
+  function loadCountryData(country){
+    var fallbackTargets = country.id === "UG" ? defaultTargets : zeroTargets;
+    return fetch(sheetCsvUrl(country.monthsId, country.monthsTab)).then(function(r){
+      if(!r.ok) throw new Error('Could not read the ' + country.name + ' Months sheet (HTTP ' + r.status + ').');
+      return r.text();
+    }).then(function(monthsText){
+      return fetch(sheetCsvUrl(country.targetsId, country.targetsTab)).then(function(r){
+        if(!r.ok) throw new Error('Could not read the ' + country.name + ' Targets sheet (HTTP ' + r.status + ').');
+        return r.text();
+      }).then(function(targetsText){
+        var monthsRows = parseCSV(monthsText);
+        var targetsRows = parseCSV(targetsText);
+        var data = {
+          months: parseMonthsRows(monthsRows),
+          targets: parseTargetsRows(targetsRows, fallbackTargets),
+          lastUpdated: new Date().toISOString(),
+          events: [], eventsMonthKey: null, eventsTabName: null, loadError: null
+        };
+        if(country.id === "KE"){
+          state.fxKesToUgx = extractFxRate(targetsRows, DEFAULT_FX_KES_TO_UGX);
+        }
+
+        // Event-level detail lives in its own tab per month, named e.g. "Events Jul 2026".
+        // It's optional — if the latest month doesn't have one yet (or it 404s), we just
+        // show an empty state instead of failing the whole country's load.
+        var sortedMonths = data.months.slice().sort(function(a,b){
+          return a.month < b.month ? -1 : (a.month > b.month ? 1 : 0);
+        });
+        var latestMonthKey = sortedMonths.length ? sortedMonths[sortedMonths.length-1].month : null;
+        if(!latestMonthKey) return data;
+
+        var tabName = "Events " + monthLabel(latestMonthKey);
+        data.eventsMonthKey = latestMonthKey;
+        data.eventsTabName = tabName;
+
+        return fetch(sheetCsvUrl(country.monthsId, tabName)).then(function(r){
+          if(!r.ok) throw new Error("no events tab for " + tabName);
+          return r.text();
+        }).then(function(text){
+          data.events = parseEventsRows(parseCSV(text)).map(function(e){ e.country = country.id; return e; });
+          return data;
+        }).catch(function(){
+          data.events = [];
+          return data;
+        });
+      });
+    }).catch(function(err){
+      return {
+        months: [], targets: JSON.parse(JSON.stringify(fallbackTargets)),
+        events: [], eventsMonthKey: null, eventsTabName: null,
+        lastUpdated: null, loadError: err.message
+      };
+    });
+  }
+
+  // Builds the display dataset (state.months/targets/events/etc.) that every render
+  // function below already reads from — from whichever country/countries are active.
+  function applyActiveView(){
+    var view = state.activeView;
+    if(view === "UG" || view === "KE"){
+      var c = state.raw[view];
+      state.currency = COUNTRIES[view].currency;
+      state.targets = c.targets;
+      state.months = c.months;
+      state.events = c.events;
+      state.eventsMonthKey = c.eventsMonthKey;
+      state.eventsTabName = c.eventsTabName;
+      state.lastUpdated = c.lastUpdated;
+      return;
+    }
+
+    // BOTH — combined East Africa view. Tickets are currency-agnostic and sum
+    // directly; every money figure from Kenya (KES) is converted to Uganda
+    // shillings (UGX) using state.fxKesToUgx before summing, so the combined
+    // view is expressed in one currency instead of mixing two.
+    var ug = state.raw.UG, ke = state.raw.KE, fx = state.fxKesToUgx || DEFAULT_FX_KES_TO_UGX;
+    state.currency = "UGX";
+
+    var byMonth = {};
+    (ug.months || []).forEach(function(m){
+      byMonth[m.month] = { month: m.month, tickets: m.tickets, gtv: m.gtv };
+    });
+    (ke.months || []).forEach(function(m){
+      var row = byMonth[m.month] || { month: m.month, tickets: 0, gtv: 0 };
+      row.tickets += m.tickets;
+      row.gtv += m.gtv * fx;
+      byMonth[m.month] = row;
+    });
+    state.months = Object.keys(byMonth).map(function(k){ return byMonth[k]; })
+      .sort(function(a,b){ return a.month < b.month ? -1 : (a.month > b.month ? 1 : 0); });
+
+    state.targets = {
+      annualTickets: (ug.targets.annualTickets || 0) + (ke.targets.annualTickets || 0),
+      annualGtv: (ug.targets.annualGtv || 0) + (ke.targets.annualGtv || 0) * fx,
+      monthlyTickets: (ug.targets.monthlyTickets || 0) + (ke.targets.monthlyTickets || 0),
+      monthlyGtv: (ug.targets.monthlyGtv || 0) + (ke.targets.monthlyGtv || 0) * fx
+    };
+
+    var keEventsConverted = (ke.events || []).map(function(e){
+      var copy = {};
+      for(var k in e){ if(Object.prototype.hasOwnProperty.call(e,k)) copy[k] = e[k]; }
+      copy.faceValue = e.faceValue * fx;
+      copy.revenue = e.revenue * fx;
+      return copy;
+    });
+    state.events = (ug.events || []).concat(keEventsConverted);
+
+    state.eventsMonthKey = ug.eventsMonthKey || ke.eventsMonthKey;
+    state.eventsTabName = "Combined (Uganda + Kenya)";
+    state.lastUpdated = [ug.lastUpdated, ke.lastUpdated].filter(Boolean).sort().pop() || null;
+  }
+
+  // Shows/hides the data-status banner based on whichever country(ies) the
+  // current view depends on — so switching to Kenya before it has real data
+  // yet doesn't get silently swallowed, but also doesn't scare Uganda users.
+  function updateBannerForActiveView(){
+    var view = state.activeView;
+    var ugErr = state.raw.UG.loadError, keErr = state.raw.KE.loadError;
+    if(view === "UG" && ugErr){
+      showBanner("error", "⚠ Could not load Uganda data. " + ugErr);
+    } else if(view === "KE" && keErr){
+      showBanner("stale", '⚠ Kenya data isn\'t available yet (' + keErr + '). Make sure the Kenya sheets are shared as "Anyone with the link – Viewer" and have data in them.');
+    } else if(view === "BOTH" && (ugErr || keErr)){
+      var msgs = [];
+      if(ugErr) msgs.push("Uganda: " + ugErr);
+      if(keErr) msgs.push("Kenya: " + keErr);
+      showBanner("stale", "⚠ Partial data — " + msgs.join(" | "));
+    } else {
+      hideBanner();
+    }
+  }
+
+  function setActiveView(view){
+    if(state.activeView === view) return;
+    state.activeView = view;
+    applyActiveView();
+    updateBannerForActiveView();
+    updateViewChrome();
+    saveCache();
+    render();
+  }
+
+  // Updates the bits of chrome (title, sidebar brand, sheet links) that differ
+  // by which country/countries are currently showing.
+  function updateViewChrome(){
+    var view = state.activeView;
+    var label = view === "UG" ? "Uganda" : (view === "KE" ? "Kenya" : "East Africa");
+    var h1 = document.querySelector(".dash-header h1");
+    if(h1) h1.textContent = "Quicket " + label + " Performance";
+    var brand = document.querySelector(".brand-name");
+    if(brand) brand.innerHTML = "Quicket<br>" + label;
+
+    var monthsLink = document.getElementById("openMonthsSheetLink");
+    var targetsLink = document.getElementById("openTargetsSheetLink");
+    var linkCountry = view === "KE" ? COUNTRIES.KE : COUNTRIES.UG;
+    if(monthsLink) monthsLink.href = sheetEditUrl(linkCountry.monthsId);
+    if(targetsLink) targetsLink.href = sheetEditUrl(linkCountry.targetsId);
+
+    document.querySelectorAll(".country-toggle-btn").forEach(function(btn){
+      btn.classList.toggle("active", btn.getAttribute("data-country") === view);
+    });
+  }
+
   function loadFromSheet(isAutoRefresh){
     if(!isAutoRefresh) showBanner("loading", "⏳ Loading the latest data from the Google Sheets…");
 
     Promise.all([
-      fetch(sheetCsvUrl(MONTHS_SPREADSHEET_ID, MONTHS_SHEET_TAB)).then(function(r){
-        if(!r.ok) throw new Error('Could not read the Months sheet (HTTP ' + r.status + ').');
-        return r.text();
-      }),
-      fetch(sheetCsvUrl(TARGETS_SPREADSHEET_ID, TARGETS_SHEET_TAB)).then(function(r){
-        if(!r.ok) throw new Error('Could not read the Targets sheet (HTTP ' + r.status + ').');
-        return r.text();
-      })
+      loadCountryData(COUNTRIES.UG),
+      loadCountryData(COUNTRIES.KE)
     ]).then(function(results){
-      var monthsRows = parseCSV(results[0]);
-      var targetsRows = parseCSV(results[1]);
-      state.months = parseMonthsRows(monthsRows);
-      state.targets = parseTargetsRows(targetsRows, defaultTargets);
-      state.lastUpdated = new Date().toISOString();
-      hideBanner();
-
-      // Event-level detail lives in its own tab per month, named e.g. "Events Jul 2026",
-      // inside the same Months spreadsheet. It's optional — if the latest month doesn't
-      // have one yet (or it 404s), we just show an empty state instead of failing the load.
-      var sortedMonths = state.months.slice().sort(function(a,b){
-        return a.month < b.month ? -1 : (a.month > b.month ? 1 : 0);
-      });
-      var latestMonthKey = sortedMonths.length ? sortedMonths[sortedMonths.length-1].month : null;
-
-      if(!latestMonthKey){
-        state.events = []; state.eventsMonthKey = null; state.eventsTabName = null;
-        saveCache();
-        render();
-        return;
-      }
-
-      var tabName = "Events " + monthLabel(latestMonthKey);
-      state.eventsMonthKey = latestMonthKey;
-      state.eventsTabName = tabName;
-
-      return fetch(sheetCsvUrl(MONTHS_SPREADSHEET_ID, tabName)).then(function(r){
-        if(!r.ok) throw new Error("no events tab for " + tabName);
-        return r.text();
-      }).then(function(text){
-        state.events = parseEventsRows(parseCSV(text));
-        saveCache();
-        render();
-      }).catch(function(){
-        state.events = [];
-        saveCache();
-        render();
-      });
+      state.raw.UG = results[0];
+      state.raw.KE = results[1];
+      applyActiveView();
+      saveCache();
+      updateBannerForActiveView();
+      render();
     }).catch(function(err){
       var cached = loadCache();
-      if(cached){
-        state.targets = cached.targets;
-        state.months = cached.months;
-        state.lastUpdated = cached.lastUpdated;
-        state.events = cached.events || [];
-        state.eventsMonthKey = cached.eventsMonthKey || null;
-        state.eventsTabName = cached.eventsTabName || null;
-        showBanner("stale", "⚠ Could not refresh from the Sheet just now (" + err.message + "). Showing the last saved data instead.");
+      if(cached && cached.raw){
+        state.raw = cached.raw;
+        state.fxKesToUgx = cached.fxKesToUgx || DEFAULT_FX_KES_TO_UGX;
+        applyActiveView();
+        showBanner("stale", "⚠ Could not refresh from the Sheets just now (" + err.message + "). Showing the last saved data instead.");
       } else {
-        showBanner("error", "⚠ Could not load data from the Google Sheets. " + err.message + ' Make sure both the Months and Targets sheets are shared as "Anyone with the link – Viewer".');
+        showBanner("error", "⚠ Could not load data from the Google Sheets. " + err.message);
       }
       render();
     });
@@ -1678,12 +1882,12 @@
     else if(abs >= 1e6) out = (abs/1e6).toFixed(2) + "M";
     else if(abs >= 1e3) out = (abs/1e3).toFixed(1) + "K";
     else out = abs.toFixed(0);
-    return "UGX " + sign + out;
+    return state.currency + " " + sign + out;
   }
 
   function fmtCurrencyFull(n){
     if(n === null || n === undefined || isNaN(n)) return "—";
-    return "UGX " + Math.round(n).toLocaleString("en-US");
+    return state.currency + " " + Math.round(n).toLocaleString("en-US");
   }
 
   function fmtPct(n, digits){
@@ -3035,7 +3239,7 @@
     { key:"ticketsDelta", label:"Ticket Δ", get:function(r){ return r.ticketsDelta; },
       fmt:function(v){ return (v===null||v===undefined) ? "—" : fmtSignedInt(v); }, numeric:true },
     { key:"gtvDelta", label:"Revenue Δ", get:function(r){ return r.gtvDelta; },
-      fmt:function(v){ return (v===null||v===undefined) ? "—" : ("UGX "+fmtSignedInt(v)); }, numeric:true },
+      fmt:function(v){ return (v===null||v===undefined) ? "—" : (state.currency+" "+fmtSignedInt(v)); }, numeric:true },
     { key:"ticketsVsTarget", label:"Ticket Target %", get:function(r){ return r.ticketsVsTarget; },
       fmt:function(v){ return (v===null||v===undefined) ? "—" : fmtPct(v); }, numeric:true },
     { key:"gtvVsTarget", label:"Revenue Target %", get:function(r){ return r.gtvVsTarget; },
@@ -3285,7 +3489,7 @@
         '<td>'+fmtInt(r.tickets)+'</td>' +
         '<td>'+fmtCurrencyFull(r.gtv)+'</td>' +
         '<td class="'+tdCls+'">'+(r.ticketsDelta===null?"—":fmtSignedInt(r.ticketsDelta))+'</td>' +
-        '<td class="'+gdCls+'">'+(r.gtvDelta===null?"—":"UGX "+fmtSignedInt(r.gtvDelta))+'</td>' +
+        '<td class="'+gdCls+'">'+(r.gtvDelta===null?"—":state.currency+" "+fmtSignedInt(r.gtvDelta))+'</td>' +
         '<td>'+(r.ticketsVsTarget===null?"—":fmtPct(r.ticketsVsTarget))+'</td>' +
         '<td>'+(r.gtvVsTarget===null?"—":fmtPct(r.gtvVsTarget))+'</td>' +
         '<td class="'+r.trend.cls+'">'+r.trend.sym+'</td>' +
@@ -3508,7 +3712,7 @@
 
     var html = '<table class="compare-table"><thead><tr><th>Metric</th><th>'+rowA.label+'</th><th>'+rowB.label+'</th><th>Δ (B − A)</th></tr></thead><tbody>';
     html += compareRow("Tickets Sold", fmtInt(rowA.tickets), fmtInt(rowB.tickets), fmtSignedInt(ticketsDelta) + (ticketsPct!==null? " ("+fmtSignedPct(ticketsPct)+")" : ""));
-    html += compareRow("Revenue (GTV)", fmtCurrencyFull(rowA.gtv), fmtCurrencyFull(rowB.gtv), "UGX "+fmtSignedInt(gtvDelta) + (gtvPct!==null? " ("+fmtSignedPct(gtvPct)+")" : ""));
+    html += compareRow("Revenue (GTV)", fmtCurrencyFull(rowA.gtv), fmtCurrencyFull(rowB.gtv), state.currency+" "+fmtSignedInt(gtvDelta) + (gtvPct!==null? " ("+fmtSignedPct(gtvPct)+")" : ""));
     html += compareRow("Tickets vs Monthly Target", rowA.ticketsVsTarget===null?"—":fmtPct(rowA.ticketsVsTarget), rowB.ticketsVsTarget===null?"—":fmtPct(rowB.ticketsVsTarget), (rowA.ticketsVsTarget!==null && rowB.ticketsVsTarget!==null) ? fmtSignedPct(rowB.ticketsVsTarget-rowA.ticketsVsTarget) : "—");
     html += compareRow("Revenue vs Monthly Target", rowA.gtvVsTarget===null?"—":fmtPct(rowA.gtvVsTarget), rowB.gtvVsTarget===null?"—":fmtPct(rowB.gtvVsTarget), (rowA.gtvVsTarget!==null && rowB.gtvVsTarget!==null) ? fmtSignedPct(rowB.gtvVsTarget-rowA.gtvVsTarget) : "—");
     html += compareRow("Cumulative Tickets ("+rowA.year+" / "+rowB.year+")", fmtInt(rowA.cumTickets), fmtInt(rowB.cumTickets), "—");
@@ -3923,10 +4127,13 @@
   initChartTooltips();
   initTableControls();
 
-  // Quiet text links to the two source Sheets, not buttons — real hrefs so right-click,
-  // cmd/ctrl-click, etc. all just work.
-  document.getElementById("openMonthsSheetLink").href = sheetEditUrl(MONTHS_SPREADSHEET_ID);
-  document.getElementById("openTargetsSheetLink").href = sheetEditUrl(TARGETS_SPREADSHEET_ID);
+  // Quiet text links to the source Sheets, not buttons — real hrefs so right-click,
+  // cmd/ctrl-click, etc. all just work. Kept in sync with the active country by
+  // updateViewChrome().
+  updateViewChrome();
+  document.querySelectorAll(".country-toggle-btn").forEach(function(btn){
+    btn.addEventListener("click", function(){ setActiveView(btn.getAttribute("data-country")); });
+  });
 
   document.getElementById("compareMonthsBtn").addEventListener("click", openCompareModal);
   document.getElementById("compareCloseBtn").addEventListener("click", closeCompareModal);
