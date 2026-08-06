@@ -1460,28 +1460,30 @@
   // living in the "Targets" Drive folder. Each Sheet must be shared
   // as "Anyone with the link – Viewer" for this page to read it.
   // ============================================================
-  // Both countries now share the same two spreadsheets: one "Months" file
-  // (monthly summary tab + one Events tab per country per month) and one
-  // "Targets" file (one tab per country). monthsId/targetsId intentionally
-  // match between UG and KE below — only the tab names differ.
+  // Both countries share the same two spreadsheets: one "Months" file (Events
+  // tabs per country per month, plus one shared History tab) and one "Targets"
+  // file (one tab per country). monthsId/targetsId intentionally match between
+  // UG and KE below — only the tab names differ.
   var COUNTRIES = {
     UG: {
       id: "UG", name: "Uganda", currency: "UGX",
       monthsId: "1Tgxk127qWCHjI92jg9Hg_W0RlhavBnevDjITcvbDF2w",
       targetsId: "17Qut6VdywgCycvzM6ai6hjLWClEvrF8lam5YmcH_HFI",
-      // NOTE: confirmed live tab name is still "Untitled" (the original default).
-      // Update this line if/when it's renamed to something like MONTHS_SHEET_TAB_UG.
-      monthsTab: "Untitled", targetsTab: "TARGETS_SHEET_TAB_UG"
+      targetsTab: "TARGETS_SHEET_TAB_UG"
     },
     KE: {
       id: "KE", name: "Kenya", currency: "KES",
       monthsId: "1Tgxk127qWCHjI92jg9Hg_W0RlhavBnevDjITcvbDF2w",
       targetsId: "17Qut6VdywgCycvzM6ai6hjLWClEvrF8lam5YmcH_HFI",
-      // Expects a tab named exactly "MONTHS_SHEET_TAB_KE" — doesn't exist yet.
-      // Until it's added, Kenya/East Africa views show a "not available" banner.
-      monthsTab: "MONTHS_SHEET_TAB_KE", targetsTab: "TARGETS_SHEET_TAB_KE"
+      targetsTab: "TARGETS_SHEET_TAB_KE"
     }
   };
+  // Shared tab (inside the Months spreadsheet) holding PAST months' reconciled
+  // totals for BOTH countries together: columns Country,Month,Tickets,GTV — one
+  // row per country per closed-out month. The CURRENT calendar month is instead
+  // computed live by summing that month's own Events tab (e.g. "Events Jul 2026
+  // UG"), so nobody has to double-enter numbers that already live in Events.
+  var MONTHLY_HISTORY_TAB = "MONTHLY_HISTORY";
   // Fallback FX rate (1 KES in UGX) for the combined "East Africa" view — only used
   // if the Kenya Targets sheet doesn't have a "fxKesToUgx" row. Add/update that row
   // in the Kenya Targets sheet any time to change this without touching code.
@@ -1572,19 +1574,38 @@
     return parseFloat(cleaned);
   }
 
-  function parseMonthsRows(csvRows){
+  // Parses the shared MONTHLY_HISTORY tab: Country, Month, Tickets, GTV — one
+  // row per country per closed-out month. Only rows matching countryId are kept.
+  function parseHistoryRows(csvRows, countryId){
     var months = [];
     for(var i = 1; i < csvRows.length; i++){ // skip header row
       var row = csvRows[i];
-      if(!row || row.length === 0) continue;
-      var monthKey = (row[0] || "").trim();
+      if(!row || row.length < 4) continue;
+      var rowCountry = (row[0] || "").trim().toUpperCase();
+      if(rowCountry !== countryId) continue;
+      var monthKey = (row[1] || "").trim();
       if(!/^\d{4}-\d{2}$/.test(monthKey)) continue; // skip blank/malformed rows
-      var tickets = parseNumber(row[1]);
-      var gtv = parseNumber(row[2]);
+      var tickets = parseNumber(row[2]);
+      var gtv = parseNumber(row[3]);
       if(isNaN(tickets) || isNaN(gtv)) continue;
       months.push({ month: monthKey, tickets: tickets, gtv: gtv });
     }
     return months;
+  }
+
+  // Real calendar month right now, as "YYYY-MM" — this is what drives which
+  // Events tab counts as "the current month" (e.g. "Events Jul 2026 UG" while
+  // it's July). Rolls over automatically on the 1st, no code change needed.
+  function currentMonthKey(){
+    var d = new Date();
+    var m = d.getMonth() + 1;
+    return d.getFullYear() + "-" + (m < 10 ? "0" + m : "" + m);
+  }
+
+  // Crude filter so internal/test events don't inflate the live current-month
+  // total. Doesn't touch what shows in Top Events/tables — only the KPI sum.
+  function isLikelyTestEvent(name){
+    return /test/i.test(name || "");
   }
 
   function parseTargetsRows(csvRows, fallback){
@@ -1682,23 +1703,27 @@
     el.style.display = "none";
   }
 
-  // Loads one country's Months + Targets + latest Events tab. Always resolves
-  // (never rejects) with a data object — a failure just leaves that country's
-  // loadError set, so one country going down never breaks the other's view.
+  // Loads one country's History + Targets + current-month Events tab. Always
+  // resolves (never rejects) with a data object — a failure just leaves that
+  // country's loadError set, so one country going down never breaks the other.
   function loadCountryData(country){
     var fallbackTargets = country.id === "UG" ? defaultTargets : zeroTargets;
-    return fetch(sheetCsvUrl(country.monthsId, country.monthsTab)).then(function(r){
-      if(!r.ok) throw new Error('Could not read the ' + country.name + ' Months sheet (HTTP ' + r.status + ').');
-      return r.text();
-    }).then(function(monthsText){
+    var curKey = currentMonthKey();
+
+    // History is optional — if the shared tab doesn't exist yet, just treat it
+    // as no past months rather than failing the whole load.
+    return fetch(sheetCsvUrl(country.monthsId, MONTHLY_HISTORY_TAB)).then(function(r){
+      return r.ok ? r.text() : "";
+    }).catch(function(){ return ""; }).then(function(historyText){
+      var historyRows = historyText ? parseHistoryRows(parseCSV(historyText), country.id) : [];
+
       return fetch(sheetCsvUrl(country.targetsId, country.targetsTab)).then(function(r){
         if(!r.ok) throw new Error('Could not read the ' + country.name + ' Targets sheet (HTTP ' + r.status + ').');
         return r.text();
       }).then(function(targetsText){
-        var monthsRows = parseCSV(monthsText);
         var targetsRows = parseCSV(targetsText);
         var data = {
-          months: parseMonthsRows(monthsRows),
+          months: historyRows.slice(),
           targets: parseTargetsRows(targetsRows, fallbackTargets),
           lastUpdated: new Date().toISOString(),
           events: [], eventsMonthKey: null, eventsTabName: null, loadError: null
@@ -1707,29 +1732,29 @@
           state.fxKesToUgx = extractFxRate(targetsRows, DEFAULT_FX_KES_TO_UGX);
         }
 
-        // Event-level detail lives in its own tab per month, named e.g. "Events Jul 2026".
-        // It's optional — if the latest month doesn't have one yet (or it 404s), we just
-        // show an empty state instead of failing the whole country's load.
-        var sortedMonths = data.months.slice().sort(function(a,b){
-          return a.month < b.month ? -1 : (a.month > b.month ? 1 : 0);
-        });
-        var latestMonthKey = sortedMonths.length ? sortedMonths[sortedMonths.length-1].month : null;
-        if(!latestMonthKey) return data;
-
-        // Events tabs are named per country per month, e.g. "Events Jul 2026 UG".
-        var tabName = "Events " + monthLabel(latestMonthKey) + " " + country.id;
-        data.eventsMonthKey = latestMonthKey;
-        data.eventsTabName = tabName;
-
+        // The current calendar month's totals are computed live by summing its
+        // own Events tab (e.g. "Events Jul 2026 UG") — no manual entry needed.
+        // It's optional — if that tab doesn't exist yet, we just fall back to
+        // History-only with no live row, instead of failing the whole load.
+        var tabName = "Events " + monthLabel(curKey) + " " + country.id;
         return fetch(sheetCsvUrl(country.monthsId, tabName)).then(function(r){
           if(!r.ok) throw new Error("no events tab for " + tabName);
           return r.text();
         }).then(function(text){
-          data.events = parseEventsRows(parseCSV(text)).map(function(e){ e.country = country.id; return e; });
+          var events = parseEventsRows(parseCSV(text)).map(function(e){ e.country = country.id; return e; });
+          data.events = events;
+          data.eventsMonthKey = curKey;
+          data.eventsTabName = tabName;
+
+          var realEvents = events.filter(function(e){ return !isLikelyTestEvent(e.name); });
+          var sumTickets = realEvents.reduce(function(s,e){ return s + (e.tickets || 0); }, 0);
+          var sumGtv = realEvents.reduce(function(s,e){ return s + (e.faceValue || 0); }, 0);
+          data.months = historyRows.concat([{ month: curKey, tickets: sumTickets, gtv: sumGtv }])
+            .sort(function(a,b){ return a.month < b.month ? -1 : (a.month > b.month ? 1 : 0); });
+
           return data;
         }).catch(function(){
-          data.events = [];
-          return data;
+          return data; // no Events tab yet for the current month — history-only
         });
       });
     }).catch(function(err){
