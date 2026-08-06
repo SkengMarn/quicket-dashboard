@@ -1465,13 +1465,15 @@
       id: "UG", name: "Uganda", currency: "UGX",
       monthsId: "1Tgxk127qWCHjI92jg9Hg_W0RlhavBnevDjITcvbDF2w",
       targetsId: "17Qut6VdywgCycvzM6ai6hjLWClEvrF8lam5YmcH_HFI",
-      monthsTab: "Untitled", targetsTab: "Untitled"
+      monthsTab: "Untitled", targetsTab: "TARGETS_SHEET_TAB_UG"
     },
     KE: {
       id: "KE", name: "Kenya", currency: "KES",
       monthsId: "1faH-wUlVNyeTxnq99BCRdUOIdP9fxGnIJ_10obKY8YI",
-      targetsId: "1L3Z0MKrskRDVN1p9RaLSGNlsSE5OBVUP4vK_iWEnMP8",
-      monthsTab: "Untitled", targetsTab: "Untitled"
+      // Targets now live as a second tab in the same spreadsheet as Uganda's,
+      // not a separate file — targetsId intentionally matches UG's above.
+      targetsId: "17Qut6VdywgCycvzM6ai6hjLWClEvrF8lam5YmcH_HFI",
+      monthsTab: "Untitled", targetsTab: "TARGETS_SHEET_TAB_KE"
     }
   };
   // Fallback FX rate (1 KES in UGX) for the combined "East Africa" view — only used
