@@ -1717,15 +1717,21 @@
   // has closed out (e.g. August's numbers land in early September), so during
   // August itself this correctly falls back to July instead of showing nothing.
   function findLatestEventsTab(country, candidateKeys, idx){
-    if(idx >= candidateKeys.length) return Promise.resolve(null);
+    if(idx >= candidateKeys.length){
+      console.log("[Quicket] " + country.id + ": no Events tab found in", candidateKeys);
+      return Promise.resolve(null);
+    }
     var key = candidateKeys[idx];
     var tabName = "Events " + monthLabel(key) + " " + country.id;
+    console.log("[Quicket] " + country.id + ": trying tab \"" + tabName + "\"...");
     return fetch(sheetCsvUrl(country.monthsId, tabName)).then(function(r){
       if(!r.ok) throw new Error("missing");
       return r.text();
     }).then(function(text){
+      console.log("[Quicket] " + country.id + ": found \"" + tabName + "\", " + text.length + " chars");
       return { key: key, tabName: tabName, text: text };
     }).catch(function(){
+      console.log("[Quicket] " + country.id + ": \"" + tabName + "\" not found, trying next...");
       return findLatestEventsTab(country, candidateKeys, idx + 1);
     });
   }
@@ -1784,10 +1790,12 @@
               .sort(function(a,b){ return a.month < b.month ? -1 : (a.month > b.month ? 1 : 0); });
           }
 
+          console.log("[Quicket] " + country.id + ": final months array ->", data.months);
           return data;
         });
       });
     }).catch(function(err){
+      console.log("[Quicket] " + country.id + ": load FAILED ->", err.message);
       return {
         months: [], targets: JSON.parse(JSON.stringify(fallbackTargets)),
         events: [], eventsMonthKey: null, eventsTabName: null,
