@@ -1593,13 +1593,20 @@
     return months;
   }
 
-  // Real calendar month right now, as "YYYY-MM" — this is what drives which
-  // Events tab counts as "the current month" (e.g. "Events Jul 2026 UG" while
-  // it's July). Rolls over automatically on the 1st, no code change needed.
+  // Real calendar month right now, as "YYYY-MM".
   function currentMonthKey(){
     var d = new Date();
     var m = d.getMonth() + 1;
     return d.getFullYear() + "-" + (m < 10 ? "0" + m : "" + m);
+  }
+
+  // Same month key, shifted by `offset` whole months (negative = earlier).
+  function monthKeyOffset(key, offset){
+    var parts = key.split("-");
+    var y = parseInt(parts[0], 10), m = parseInt(parts[1], 10);
+    var d = new Date(y, (m - 1) + offset, 1);
+    var mm = d.getMonth() + 1;
+    return d.getFullYear() + "-" + (mm < 10 ? "0" + mm : "" + mm);
   }
 
   // Crude filter so internal/test events don't inflate the live current-month
@@ -1703,12 +1710,36 @@
     el.style.display = "none";
   }
 
-  // Loads one country's History + Targets + current-month Events tab. Always
+  // Tries a country's Events tab for each month key in turn (most recent
+  // first) and returns the first one that actually exists. This is how the
+  // dashboard finds "the latest reported month" without needing to be told —
+  // since a given month's Events tab typically only appears once that month
+  // has closed out (e.g. August's numbers land in early September), so during
+  // August itself this correctly falls back to July instead of showing nothing.
+  function findLatestEventsTab(country, candidateKeys, idx){
+    if(idx >= candidateKeys.length) return Promise.resolve(null);
+    var key = candidateKeys[idx];
+    var tabName = "Events " + monthLabel(key) + " " + country.id;
+    return fetch(sheetCsvUrl(country.monthsId, tabName)).then(function(r){
+      if(!r.ok) throw new Error("missing");
+      return r.text();
+    }).then(function(text){
+      return { key: key, tabName: tabName, text: text };
+    }).catch(function(){
+      return findLatestEventsTab(country, candidateKeys, idx + 1);
+    });
+  }
+
+  // Loads one country's History + Targets + latest-available Events tab. Always
   // resolves (never rejects) with a data object — a failure just leaves that
   // country's loadError set, so one country going down never breaks the other.
   function loadCountryData(country){
     var fallbackTargets = country.id === "UG" ? defaultTargets : zeroTargets;
     var curKey = currentMonthKey();
+    // Look at this month, then up to 2 months back, for whichever Events tab
+    // actually exists — covers the normal case where a month's data only
+    // shows up after that month ends.
+    var candidateKeys = [curKey, monthKeyOffset(curKey, -1), monthKeyOffset(curKey, -2)];
 
     // History is optional — if the shared tab doesn't exist yet, just treat it
     // as no past months rather than failing the whole load.
@@ -1732,29 +1763,28 @@
           state.fxKesToUgx = extractFxRate(targetsRows, DEFAULT_FX_KES_TO_UGX);
         }
 
-        // The current calendar month's totals are computed live by summing its
-        // own Events tab (e.g. "Events Jul 2026 UG") — no manual entry needed.
-        // It's optional — if that tab doesn't exist yet, we just fall back to
-        // History-only with no live row, instead of failing the whole load.
-        var tabName = "Events " + monthLabel(curKey) + " " + country.id;
-        return fetch(sheetCsvUrl(country.monthsId, tabName)).then(function(r){
-          if(!r.ok) throw new Error("no events tab for " + tabName);
-          return r.text();
-        }).then(function(text){
-          var events = parseEventsRows(parseCSV(text)).map(function(e){ e.country = country.id; return e; });
-          data.events = events;
-          data.eventsMonthKey = curKey;
-          data.eventsTabName = tabName;
+        return findLatestEventsTab(country, candidateKeys, 0).then(function(found){
+          if(!found) return data; // no Events tab found in the lookback window
 
-          var realEvents = events.filter(function(e){ return !isLikelyTestEvent(e.name); });
-          var sumTickets = realEvents.reduce(function(s,e){ return s + (e.tickets || 0); }, 0);
-          var sumGtv = realEvents.reduce(function(s,e){ return s + (e.faceValue || 0); }, 0);
-          data.months = historyRows.concat([{ month: curKey, tickets: sumTickets, gtv: sumGtv }])
-            .sort(function(a,b){ return a.month < b.month ? -1 : (a.month > b.month ? 1 : 0); });
+          var events = parseEventsRows(parseCSV(found.text)).map(function(e){ e.country = country.id; return e; });
+          data.events = events;
+          data.eventsMonthKey = found.key;
+          data.eventsTabName = found.tabName;
+
+          // If this month is already a locked-in row in History, trust that
+          // reconciled number instead of double-adding a live-computed one —
+          // this is what lets a month "graduate" from live-estimate to
+          // official once you add it to MONTHLY_HISTORY yourself.
+          var alreadyInHistory = historyRows.some(function(m){ return m.month === found.key; });
+          if(!alreadyInHistory){
+            var realEvents = events.filter(function(e){ return !isLikelyTestEvent(e.name); });
+            var sumTickets = realEvents.reduce(function(s,e){ return s + (e.tickets || 0); }, 0);
+            var sumGtv = realEvents.reduce(function(s,e){ return s + (e.faceValue || 0); }, 0);
+            data.months = historyRows.concat([{ month: found.key, tickets: sumTickets, gtv: sumGtv }])
+              .sort(function(a,b){ return a.month < b.month ? -1 : (a.month > b.month ? 1 : 0); });
+          }
 
           return data;
-        }).catch(function(){
-          return data; // no Events tab yet for the current month — history-only
         });
       });
     }).catch(function(err){
