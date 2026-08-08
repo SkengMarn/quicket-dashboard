@@ -1753,6 +1753,20 @@
     el.style.display = "none";
   }
 
+  // Google Sheets' gviz CSV export has a dangerous quirk: requesting a tab name
+  // that doesn't exist in the workbook does NOT return an error — it silently
+  // returns HTTP 200 with the content of the FIRST sheet in the workbook instead.
+  // Without checking this, findLatestEventsTab below would treat that fallback
+  // content as if it were a real "Events <Mon> <Year> <Country>" tab (e.g.
+  // wrongly parsing the MONTHLY_HISTORY tab's Country/Month/Tickets/GTV rows as
+  // if they were Event Id/Event Name/... rows). Checking the header row catches
+  // this: a real Events tab always starts with "Event Id".
+  function looksLikeEventsCsv(text){
+    var rows = parseCSV(text);
+    if(!rows.length || !rows[0].length) return false;
+    return (rows[0][0] || "").trim().toLowerCase() === "event id";
+  }
+
   // Tries a country's Events tab for each month key in turn (most recent
   // first) and returns the first one that actually exists. This is how the
   // dashboard finds "the latest reported month" without needing to be told —
@@ -1771,6 +1785,12 @@
       if(!r.ok) throw new Error("missing");
       return r.text();
     }).then(function(text){
+      if(!looksLikeEventsCsv(text)){
+        // This tab name doesn't really exist yet — gviz silently handed back
+        // some other sheet's content instead of a 404. Treat it exactly like
+        // "not found" and keep looking back through earlier months.
+        throw new Error("tab \"" + tabName + "\" doesn't exist (got fallback content, not an Events tab)");
+      }
       console.log("[Quicket] " + country.id + ": found \"" + tabName + "\", " + text.length + " chars");
       return { key: key, tabName: tabName, text: text };
     }).catch(function(){
