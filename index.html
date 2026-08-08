@@ -1893,14 +1893,25 @@
     var fxKes = state.fxUsdToKes || DEFAULT_FX_USD_TO_KES; // 1 USD = fxKes KES
     state.currency = "USD";
 
+    // Alongside the combined totals, keep each country's own contribution per
+    // month (ugTickets/keTickets/ugGtv/keGtv, GTV already in USD) so charts can
+    // break a bar down into "how much came from Uganda vs Kenya" instead of
+    // only showing one blended total.
     var byMonth = {};
     (ug.months || []).forEach(function(m){
-      byMonth[m.month] = { month: m.month, tickets: m.tickets, gtv: m.gtv / fxUgx };
+      var ugGtvUsd = m.gtv / fxUgx;
+      byMonth[m.month] = {
+        month: m.month, tickets: m.tickets, gtv: ugGtvUsd,
+        ugTickets: m.tickets, keTickets: 0, ugGtv: ugGtvUsd, keGtv: 0
+      };
     });
     (ke.months || []).forEach(function(m){
-      var row = byMonth[m.month] || { month: m.month, tickets: 0, gtv: 0 };
+      var keGtvUsd = m.gtv / fxKes;
+      var row = byMonth[m.month] || { month: m.month, tickets: 0, gtv: 0, ugTickets: 0, keTickets: 0, ugGtv: 0, keGtv: 0 };
       row.tickets += m.tickets;
-      row.gtv += m.gtv / fxKes;
+      row.gtv += keGtvUsd;
+      row.keTickets += m.tickets;
+      row.keGtv += keGtvUsd;
       byMonth[m.month] = row;
     });
     state.months = Object.keys(byMonth).map(function(k){ return byMonth[k]; })
@@ -2206,6 +2217,8 @@
         label: monthLabel(m.month),
         tickets: m.tickets,
         gtv: m.gtv,
+        // Only present in the combined "East Africa" view — see applyActiveView.
+        ugTickets: m.ugTickets, keTickets: m.keTickets, ugGtv: m.ugGtv, keGtv: m.keGtv,
         ticketsDelta: ticketsDelta,
         ticketsPct: ticketsPct,
         gtvDelta: gtvDelta,
@@ -2296,6 +2309,49 @@
   ];
   var TICKET_COMPOSITION_NOTE = "Ticket bar shown as Free / Online / POS composition for the latest month only — earlier months predate per-event tracking. Revenue stays one color since we don't have revenue broken down by channel.";
 
+  // In the combined "East Africa" view, every month has a known Uganda/Kenya
+  // split for both tickets and revenue (unlike the Free/Online/POS channel
+  // split above, which only exists for whichever single month has an Events
+  // tab). So in that view, both the tickets bar AND the revenue bar are shown
+  // as a two-color Uganda/Kenya stack instead of a solid color or the channel
+  // composition above.
+  var COUNTRY_COMPOSITION_SEGMENTS = [
+    { key:"UG", label:"Uganda", color:"#1d4ed8" },
+    { key:"KE", label:"Kenya", color:"#f59e0b" }
+  ];
+  var COUNTRY_COMPOSITION_NOTE = "Bars shown as Uganda / Kenya composition — this is the combined East Africa view.";
+
+  function getMonthCountryComposition(row, key){
+    if(state.activeView !== "BOTH") return null;
+    if(!row || row.ugTickets === undefined || row.ugTickets === null) return null; // old cached row, no breakdown saved
+    if(key === "tickets"){
+      var total = (row.ugTickets || 0) + (row.keTickets || 0);
+      if(total <= 0) return null;
+      return { UG: row.ugTickets || 0, KE: row.keTickets || 0, total: total };
+    }
+    var totalGtv = (row.ugGtv || 0) + (row.keGtv || 0);
+    if(totalGtv <= 0) return null;
+    return { UG: row.ugGtv || 0, KE: row.keGtv || 0, total: totalGtv };
+  }
+
+  // Draws a set of stacked segments (bottom of the bar up) inside an existing
+  // bar's footprint, given any {key,label,color} segment list and a comp
+  // object shaped like { <key>: value, ..., total }. Shared by both the
+  // channel (Free/Online/POS) and country (Uganda/Kenya) composition bars.
+  function buildStackedSegmentsSvg(segments, comp, x, yTop, barW, barH, labelPrefix, fmtFn){
+    var out = "", yCursor = yTop + barH;
+    segments.forEach(function(seg){
+      var segVal = comp[seg.key] || 0;
+      var segH = comp.total > 0 ? (segVal/comp.total) * barH : 0;
+      if(segH <= 0) return;
+      yCursor -= segH;
+      var segPct = comp.total > 0 ? (segVal/comp.total*100) : 0;
+      var segTt = labelPrefix + " — " + seg.label + ": " + fmtFn(segVal) + " (" + segPct.toFixed(0) + "%)";
+      out += '<rect class="tt-point" data-tt="'+segTt+'" x="'+x+'" y="'+yCursor+'" width="'+barW+'" height="'+Math.max(1,segH)+'" fill="'+seg.color+'" style="cursor:pointer;"></rect>';
+    });
+    return out;
+  }
+
   function buildGroupedBarChartSVG(rows, keyA, keyB, colorA, colorB){
     var w = 620, h = 210, padL = 8, padR = 8, padT = 12, padB = 26;
     var innerW = w - padL - padR, innerH = h - padT - padB;
@@ -2305,7 +2361,7 @@
     var maxA = Math.max.apply(null, rows.map(function(r){ return r[keyA]; })) || 1;
     var maxB = Math.max.apply(null, rows.map(function(r){ return r[keyB]; })) || 1;
     var bars = "";
-    var anySegmented = false;
+    var anySegmented = false, anyCountrySegmented = false;
     rows.forEach(function(r,i){
       var gx = padL + i*groupW;
       var hA = (r[keyA]/maxA) * innerH;
@@ -2313,30 +2369,39 @@
       var xA = gx + groupW/2 - barW - 2;
       var xB = gx + groupW/2 + 2;
       var yA = padT+innerH-hA;
+      var yB = padT+innerH-hB;
 
-      var comp = (keyA === "tickets") ? getMonthTicketComposition(r) : null;
-      if(comp){
-        anySegmented = true;
-        var yCursor = yA + hA;
-        TICKET_COMPOSITION_SEGMENTS.forEach(function(seg){
-          var segVal = comp[seg.key];
-          var segH = comp.total > 0 ? (segVal/comp.total) * hA : 0;
-          if(segH <= 0) return;
-          yCursor -= segH;
-          var segPct = comp.total > 0 ? (segVal/comp.total*100) : 0;
-          var segTt = r.label + " — " + seg.label + " tickets: " + fmtInt(segVal) + " (" + segPct.toFixed(0) + "% of " + fmtInt(r[keyA]) + " total)";
-          bars += '<rect class="tt-point" data-tt="'+segTt+'" x="'+xA+'" y="'+yCursor+'" width="'+barW+'" height="'+Math.max(1,segH)+'" fill="'+seg.color+'" style="cursor:pointer;"></rect>';
-        });
+      // Combined East Africa view: split both bars by country. Otherwise, fall
+      // back to the single-country channel composition (tickets bar, latest
+      // month only) or a plain solid-color bar.
+      var countryCompA = getMonthCountryComposition(r, keyA);
+      if(countryCompA){
+        anyCountrySegmented = true;
+        bars += buildStackedSegmentsSvg(COUNTRY_COMPOSITION_SEGMENTS, countryCompA, xA, yA, barW, hA, r.label + " — Tickets", fmtInt);
       } else {
-        var ttA = r.label + " — Tickets: " + fmtInt(r[keyA]);
-        bars += '<rect class="tt-point" data-tt="'+ttA+'" x="'+xA+'" y="'+yA+'" width="'+barW+'" height="'+Math.max(1,hA)+'" rx="2" fill="'+colorA+'" style="cursor:pointer;"></rect>';
+        var comp = (keyA === "tickets") ? getMonthTicketComposition(r) : null;
+        if(comp){
+          anySegmented = true;
+          bars += buildStackedSegmentsSvg(TICKET_COMPOSITION_SEGMENTS, comp, xA, yA, barW, hA, r.label, fmtInt);
+        } else {
+          var ttA = r.label + " — Tickets: " + fmtInt(r[keyA]);
+          bars += '<rect class="tt-point" data-tt="'+ttA+'" x="'+xA+'" y="'+yA+'" width="'+barW+'" height="'+Math.max(1,hA)+'" rx="2" fill="'+colorA+'" style="cursor:pointer;"></rect>';
+        }
       }
 
-      var ttB = r.label + " — Revenue: " + fmtCurrencyFull(r[keyB]);
-      bars += '<rect class="tt-point" data-tt="'+ttB+'" x="'+xB+'" y="'+(padT+innerH-hB)+'" width="'+barW+'" height="'+Math.max(1,hB)+'" rx="2" fill="'+colorB+'" style="cursor:pointer;"></rect>';
+      var countryCompB = getMonthCountryComposition(r, keyB);
+      if(countryCompB){
+        anyCountrySegmented = true;
+        bars += buildStackedSegmentsSvg(COUNTRY_COMPOSITION_SEGMENTS, countryCompB, xB, yB, barW, hB, r.label + " — Revenue", fmtCurrencyFull);
+      } else {
+        var ttB = r.label + " — Revenue: " + fmtCurrencyFull(r[keyB]);
+        bars += '<rect class="tt-point" data-tt="'+ttB+'" x="'+xB+'" y="'+yB+'" width="'+barW+'" height="'+Math.max(1,hB)+'" rx="2" fill="'+colorB+'" style="cursor:pointer;"></rect>';
+      }
       bars += '<text x="'+(gx+groupW/2)+'" y="'+(h-8)+'" font-size="9" fill="#64748b" text-anchor="middle">'+shortMonthLabel(r.key)+'</text>';
     });
-    var note = anySegmented ? '<div style="font-size:9.5px;color:var(--gray-500);margin-top:4px;">'+TICKET_COMPOSITION_NOTE+'</div>' : "";
+    var note = anyCountrySegmented
+      ? '<div style="font-size:9.5px;color:var(--gray-500);margin-top:4px;">'+COUNTRY_COMPOSITION_NOTE+'</div>'
+      : (anySegmented ? '<div style="font-size:9.5px;color:var(--gray-500);margin-top:4px;">'+TICKET_COMPOSITION_NOTE+'</div>' : "");
     return '<svg viewBox="0 0 '+w+' '+h+'" style="width:100%;height:auto;display:block;">'+bars+'</svg>' + note;
   }
 
@@ -2379,7 +2444,7 @@
     var barW = Math.max(4, Math.min(22, groupW - 8));
     var maxVal = Math.max.apply(null, rows.map(function(r){ return r[key]; }).concat([target])) || 1;
     var bars = "";
-    var anySegmented = false;
+    var anySegmented = false, anyCountrySegmented = false;
     rows.forEach(function(r,i){
       var gx = padL + i*groupW + (groupW-barW)/2;
       var hV = (r[key]/maxVal) * innerH;
@@ -2387,36 +2452,38 @@
       var pctOfTarget = target > 0 ? (r[key]/target*100) : null;
       var vsTargetNote = " · Month total " + fmtFn(r[key]) + " vs Target " + fmtFn(target) + (pctOfTarget!==null ? " (" + fmtPct(pctOfTarget) + ")" : "");
 
-      var comp = (key === "tickets") ? getMonthTicketComposition(r) : null;
-      if(comp){
-        anySegmented = true;
-        var yCursor = yTop + hV;
-        TICKET_COMPOSITION_SEGMENTS.forEach(function(seg){
-          var segVal = comp[seg.key];
-          var segH = comp.total > 0 ? (segVal/comp.total) * hV : 0;
-          if(segH <= 0) return;
-          yCursor -= segH;
-          var segPct = comp.total > 0 ? (segVal/comp.total*100) : 0;
-          var segTt = r.label + " — " + seg.label + ": " + fmtInt(segVal) + " (" + segPct.toFixed(0) + "% of tickets)" + vsTargetNote;
-          bars += '<rect class="tt-point" data-tt="'+segTt+'" x="'+gx+'" y="'+yCursor+'" width="'+barW+'" height="'+Math.max(1,segH)+'" fill="'+seg.color+'" style="cursor:pointer;"></rect>';
-        });
+      var countryComp = getMonthCountryComposition(r, key);
+      if(countryComp){
+        anyCountrySegmented = true;
+        bars += buildStackedSegmentsSvg(COUNTRY_COMPOSITION_SEGMENTS, countryComp, gx, yTop, barW, hV, r.label + vsTargetNote, fmtFn);
       } else {
-        var tt = r.label + " — " + fmtFn(r[key]) + " (Target: " + fmtFn(target) + (pctOfTarget!==null ? ", " + fmtPct(pctOfTarget) : "") + ")";
-        bars += '<rect class="tt-point" data-tt="'+tt+'" x="'+gx+'" y="'+yTop+'" width="'+barW+'" height="'+Math.max(1,hV)+'" rx="2" fill="'+color+'" opacity="0.85" style="cursor:pointer;"></rect>';
+        var comp = (key === "tickets") ? getMonthTicketComposition(r) : null;
+        if(comp){
+          anySegmented = true;
+          bars += buildStackedSegmentsSvg(TICKET_COMPOSITION_SEGMENTS, comp, gx, yTop, barW, hV, r.label + vsTargetNote, fmtInt);
+        } else {
+          var tt = r.label + " — " + fmtFn(r[key]) + " (Target: " + fmtFn(target) + (pctOfTarget!==null ? ", " + fmtPct(pctOfTarget) : "") + ")";
+          bars += '<rect class="tt-point" data-tt="'+tt+'" x="'+gx+'" y="'+yTop+'" width="'+barW+'" height="'+Math.max(1,hV)+'" rx="2" fill="'+color+'" opacity="0.85" style="cursor:pointer;"></rect>';
+        }
       }
       bars += '<text x="'+(gx+barW/2)+'" y="'+(h-8)+'" font-size="8.5" fill="#64748b" text-anchor="middle">'+shortMonthLabel(r.key)+'</text>';
     });
     var targetY = padT + innerH - (target/maxVal)*innerH;
     var targetLine = '<line x1="'+padL+'" y1="'+targetY+'" x2="'+(w-padR)+'" y2="'+targetY+'" stroke="#b91c1c" stroke-width="1.4" stroke-dasharray="4,3"></line>' +
       '<text x="'+(w-padR)+'" y="'+(targetY-4)+'" font-size="8.5" fill="#b91c1c" text-anchor="end">Target</text>';
-    var legend = anySegmented
+    var legend = anyCountrySegmented
       ? '<div class="chart-legend" style="margin-top:4px;">' +
-          '<span><span class="dot" style="background:var(--gray-300);"></span>Free</span>' +
-          '<span><span class="dot" style="background:#1d4ed8;"></span>Online</span>' +
-          '<span><span class="dot" style="background:#f59e0b;"></span>POS</span>' +
-        '</div>' +
-        '<div style="font-size:9px;color:var(--gray-500);margin-top:2px;">Composition shown for the latest month only — earlier months predate per-event tracking.</div>'
-      : "";
+          '<span><span class="dot" style="background:#1d4ed8;"></span>Uganda</span>' +
+          '<span><span class="dot" style="background:#f59e0b;"></span>Kenya</span>' +
+        '</div>'
+      : (anySegmented
+        ? '<div class="chart-legend" style="margin-top:4px;">' +
+            '<span><span class="dot" style="background:var(--gray-300);"></span>Free</span>' +
+            '<span><span class="dot" style="background:#1d4ed8;"></span>Online</span>' +
+            '<span><span class="dot" style="background:#f59e0b;"></span>POS</span>' +
+          '</div>' +
+          '<div style="font-size:9px;color:var(--gray-500);margin-top:2px;">Composition shown for the latest month only — earlier months predate per-event tracking.</div>'
+        : "");
     return '<svg viewBox="0 0 '+w+' '+h+'" style="width:100%;height:auto;display:block;">'+bars+targetLine+'</svg>' + legend;
   }
 
@@ -2825,12 +2892,18 @@
 
     var year = getTrackingYear(rows);
 
-    // 1. Monthly Tickets vs Revenue
+    // 1. Monthly Tickets vs Revenue — in the combined East Africa view, bar
+    // color encodes country (Uganda/Kenya) instead of metric, since which bar
+    // is which is already clear from its position (left = Tickets, right =
+    // Revenue) and the hover tooltip.
+    var ticketsVsRevenueLegend = state.activeView === "BOTH"
+      ? '<div class="chart-legend"><span><span class="dot" style="background:#1d4ed8;"></span>Uganda</span><span><span class="dot" style="background:#f59e0b;"></span>Kenya</span></div>'
+      : '<div class="chart-legend"><span><span class="dot" style="background:#1d4ed8;"></span>Tickets</span><span><span class="dot" style="background:#15803d;"></span>Revenue</span></div>';
     html += chartCard(
       "Monthly Tickets vs Revenue",
-      "Each series scaled to its own peak so shapes can be compared",
-      buildGroupedBarChartSVG(rows, "tickets", "gtv", "#1d4ed8", "#15803d") +
-      '<div class="chart-legend"><span><span class="dot" style="background:#1d4ed8;"></span>Tickets</span><span><span class="dot" style="background:#15803d;"></span>Revenue</span></div>'
+      "Each series scaled to its own peak so shapes can be compared" +
+        (state.activeView === "BOTH" ? " — left bar is Tickets, right bar is Revenue" : ""),
+      buildGroupedBarChartSVG(rows, "tickets", "gtv", "#1d4ed8", "#15803d") + ticketsVsRevenueLegend
     );
 
     // 2. Month-on-Month Growth
